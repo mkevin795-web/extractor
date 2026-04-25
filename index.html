@@ -1,0 +1,323 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Extraccion Etiquetas MercadoLibre</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css" data-app-stylesheet>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAA5QAAADiCAYAAAAxpYgJAAAACXBIWXMAAAsSAAALEgHS3X78AAAgAElEQVR4nO2dTW7byNaG2R/u3L4rsO8K4jvRNL4riC7AkSdRryBuQDMPogw0E9DOCiJPNBLQ8gpiTTVpawVtreBaK8iHcg7dFYaUKPEUWVV8HiBI/yQyRYlkvXXe855fvn37lgAAhEg6np0mSXJRcOjP85urx7bfUgDHd2n969P85uqpxcOBI0jHM/P9Oi34m3yeAADQCNELynQ8q/sGl/Obq8sKfw72fxajJEk+Kpyn/8xvrh58Ot/peDZNkuT9jj+y95grvMan+c3V6PijPI50PDtPkuSvkr/c+PWRjmeDJEn6SZKYn3tS4a9skyR5tH49uFxoy/m6lmM8O+DYHuTYnh0flzlvbyoc0yJJkqnD43mqcH4Oxcn3cc+967/zm6uF9s/ccSyn1vdr1+doszabGNZ3rPH7ZzrpsXv9Mxsj/K3/+izXXiKf1fN8uGp94wkAYB//4Azt5W06nl3Pb65uPT9OaJd9i9hLWSAUIovEvqef4S4Re97UQcg5Mgv3twf+1RP5O9nf+ywLcnXMvSJJkt+PPLYP8j7/pSl45bzd7tmsKDumkRFTju5/2mIy2XWNHYsl4Mq4kO+lc6Qa+VBxI8UmE57mM/2Yjmfebcp1lLOC6+Cd/P6ygZFOeolsCPy96TRcUXkGAK/4Pz6OSoxkdx/gJ+S7UXdx3D9ikegceW+7hIgLUVDGMWKyCCeLMakwHyImC1EWk+eyCK0qJvOY7+TvUqFTI2e11cTFZ3u959ossjSrU0NM/gRiMjjeyDX8xbhF0knvKZ30btNJz9dNSADoGAjKapgH+DSEA4VWqLI4LupxsqlSMXNiPdzDXiHhUBzYP2OgJCYTy1KmRjqeHVIB3MVS+dAWB9gid/FReVNt3/VwLKqCskJ1MmmwSn+rtOm0UXgNaJczcTT8YYlLNr0BoDUQlNUx1ld2A6GIKoKqtIohlYcqi/5Ge2kqVCczmljIaFpUVc+jCOoPSi+ntmkgVUUNMZmhWaV0UtVzUHnbV51MlM9xIXKP0NpQwS4ZF5m4NJXLRTrpkfkAAI1DD+VhTM0i21VIBQRL3Qe4k34+BaoKCKeCUoRt2aL9Xio3P6SmFlRNX9NWHVy/u87TUv7/o/1zc+mv9j+rLPYrVNbupHqZPxeDHZsImhtq0z39jl8L/ttGjq8RKlYnXzCCz3Fqb9m532bfL/s7JtdM/rrM0mCxu8aL6b98l0565r4zoNcSAJoCQXkYmfWVSiW8cED/ZKHFz9cwngOqk4mCoN5HWTXLJHoWnruSSpV6cMqeytHd/OaqUADJwt8+Ru1jK6usGQFyuUP8PEgvaJGgO5ENtdqLVHmNwteRa6KIp4Z7/6pUJzPOHTsIyq4xExj3UztGyflFSHaHt1Kx/GQ23ObDFZvgAOAULK+H8w7rK1hUFVNlFbZDwniaXBQcUjV1bXktE5SNjWrYQVnFbF0mJhui7PO73ldJE9F2X/K/m7A3l33ejQmiQ6qTgutgnjKR7cM1AP5ikmIf00mvkeAoAOguCMrjuN2xiw7dou6DurLoaGoQvny3i45rKyM38rhOei271nyYz1a2udTamCGx+xZtUmyKqlkllJ3bJu57ZddU0xsqRefwruTPu16wF21IbWm/gAqY+/Of6aTX5gYXAEQOgvI4zpQDKiBcKts98ymZ8u9aQRualC2mb3fYFF3aXn0QGD8hdtciMb09QLi5oEzkahxTE5WOVjcQ9lQnRyVJvM4qtzvSdRl4D4fwJZ30SKsHACcgKI/nQxPjEsBfZOFZWDkoOej8wtC7MJ4di+mtCMqyRWwbkfVtV2fKrv+2bYguj6sJ22nZ8TcloAZl1ckdvZ8uk14ZBwFavEdUAoALCOWpx5SHfacpW/g+SNrePspspU8FC9SmZseVVSenxl6Xjmc+Ccpbmf9YSAMBLq33+pVQZo8MpaJV9F1q0t65qzqZ7KjSu056zfNWRsOUfd+eNAKUIDqMqEzmwxUWWABQA0FZjzPzQJ/fXGF/7Sa7KkFFgvIiW/zJoP4i4bYoWVA7Xxjusfq9CDcRlUX/v41q/btdwl2O82VshyNx6Z2g3OGaOPSY2uwRL7IRN2V3HZT8/HtLnO3aVGlatH+UX4Wk49lW7inX9FuCBaISGkHmoja1PniYD1ekWbcEgrI+H9PxbBHQ7j/oUXSTfOmfS8ezLwX/z16klz3Id1UcXFMaRJKrdCwLej9dViifavSamr/3NR3PfnXQ11hWCWyzKlQmcg+9P7XSt7pDEDd1Tss2B+1KeNmxXLiwO5vNkJJNnCqcyPifC3NuEZVgYUSlWYBjgQWX7Jpt7AIEZUvQQ6kDN+SOsaN/cu/CfUcYz1LEiOvU1KJj2hdEYlO0oHZ5zBrXl2oyswTyFNH2xlLZezz0IVu4QdDAxlnpDErHP3dXdXJpV7h3nAOXgUVl6bJVedNm8jB4yxdGioBj+H51BASlDm+klwW6wz5rYVHPY3ZjLRNuu4ST6wV11epk6bG4CqmSxXzdBfXJISNaKuDrKBOtCl+RsGqij7dNG3HZPbzovxedC5dV+usdYV9Vec+4KyhgkU56fC/AFS4Dy8AjEJR6XO+Id4f42Ccoixbw2UO7MIxnjyXTmaCs0juZo/FgnvnN1aBkBuYhaAresvfatqWwcGF4iA23ZdtpmaB0+rOrVif3HI+zhZNYVc3nsq75UlQLIA9j0MAJVL+7BT2UepxIhYlRIt2g8HPeF/6yI4xnmrif51hGWXXSVET66XiWn2tYJqacbqjMb66uJdX1csfPupRFc9H70dyF93U2oIaoabNKWFsQH0npgvoQ94nLpFd53QuxW5fNGj2Xz6/se0AlCor4kE56CwJNQBkEZYdAUOpiYtxNmh69KhGzo3/SHnj+WNAnuStYppXvzJ7q5MmuBMkCnIthERY7eyplwf2n62MpwcfQk0OrWm3OgSy6RupW5XayozqZHc8hgVDOk15FWO78Gel4Ni0JwsBFA2WM2BAHZRCUHQLLqz4j+lSip8pohjJhsSuMZxeuFqll1clj8GKxSuLyT1QWuXLvKhvF4rR6saNloLXq5BH4soAqO2dcG1DG23TSK6t8AxwDgrJDICj1OSH1NXq0Zv1l2N+Xxnrz9lQnj6HxdNoiGkpgLfs8fNzhP2SDq+z7sG5g5ETjNuI91cljYAEFIUMvJWjC/bBDICjd8K6g7wzioUr/ZFVxmQ/jabLKp1mdfKGlHtA8ZQJKUxCViZy2339R+uibKq6JPRsMTWyStWG11V5A+2IpbXueJ4TJGxlED1CLdNI7115fgN8gKN0xxfoaHzv6J4/t82qlmr1HPKylH3TXr7IREj4sqDXHg5RRtjB/27KoLjuunedEvg8POxYA6gP7C2hiI+CVPdXJfd//Zcnfaz0iXz7LwspAA+FGED6arhXoLlQnOwahPO44kaCVJha30BxV7a5VF8FVw3i0qzS7kl0v99kbTfhUkiS/F/wvVUFpi7MKCbrn8r6KwkgSzR5AszBPx7NNiSD5mo5nn4wIK+rnlOO0z9OzYt/nU0mf7u9iBV7Iz3uwjqMv96kyMVk0i9QFZSLIVe9mWXXyTsbU7CQdzx6LBKRm0mvuu/K073MQZ8yo5LNsYo4ohM87U12aD1dsPkAdEJQdA0HpFjNIeupwQQTNU2mkgllQpuPZvoO7L1ggltlp1ao0++ZOVvxZzi2fspj+av173ZfUFuVGnH0o+X8mHfdjxWP+pHhsix2C+n32/w44l9sGKxZF15YTEbSnOlnVBlsoKJWTXgd20nLNa4DnEFSl31byOEQD1umOgeXVPVhf40IzkKet8KZd1cm6FVPNCqXma905CJXRWnCpVQLmN1cLZRE2aCCMJ9vkKPpOuqqS7KpOVv2ZZX9Oc2de87UIi4Oq4KyCujCiqGMgKN1zRnJaVBTOyStZdO9a2G9k8d8oStXJrGJa9P40EzO1dji3Lq5BER6fFV5KWzRpLQY/NfgdrVT510CpOrnr2DRFoNai7B6nDBzAGwlVATiYdNI79SX1HZoDy2szfEjHswUP9LDZEbZS9rk+7bipllULih7iZQEgx6BRncwofH/mPCl91zUq+1lPqJNK1/zm6lpEepnNtAqqVlzpj/yvfJ7HPNS3UplscsOjsXE5StXJpKEqvUbIz7KDFaeN54m2RRuTvoHtFY6F/skOgqBsjlsusuBpwu7qbFdPqzpp8VCyMNJaUE9FUFzKtXNIBPlG/v4x7+sgTICL2TASoVJVAGzk/D24OD4Rgwupxg0qnL+tHM8iN8amKRqZQalYnXyp0qfj2bbgvGomvf5qff8Pfd21fP+7aHWdzocrr51BUgG8FOH2zoNDynOJoIQjoX+yg/zy7du3qN91Op759AaNhayz9td0PBvZARM1+A/V3m5SUCXORiQ8W+JjbxqmK3aNbPDg2PLpshmPTfRJQn1Kvl/nVhDQy+fo4/0xnfSafBZ/8l1Q2oi4HNV0OqgzH65+8el4IAzSSW/R0iZJUNd9bFChbJaPYn11OagbIFpKFsqN96KWIcLMy80OEbKMAggYn79fcDwyomOQTnpTuZ95MRA+nfQu58MV3zc4FPpvA0Z6YDNnzIVs3O+y6Rs3zAOCcjdLB70Ot9gBAAAAwMaINyPiZNPAB1F5wQYGHIGm7R8aIJ30LqQ95vLAz28rm2BTBOVuRiIANS+Ot2Yo/Pzmit4EAAAAeGU+XD16JCrJfYCDkO8uBIBY7a+lj/vQ/A6TAzGaD1evPfoIyv0Yxf6n8muOxPqK/QwAAABeEVFpNrR/b/msICjhUPjOeIzYWfsiJI8plt2/hL0VWOGZQ7kH6Xf8pPyyJwyZBgAAgCLmw9Wt8sioY8C6CIeCoPQQY2mVHm1TyPpyhK31LkmSf82Hq35ZXzWCsgKSzLpWftm3EmEPAAAAkKf1xErprQKoCoE8HpFOeibs60Gclu+PGL/2m/lM58PVQMLDSsHyWh1THv6q/Jq3Yn0lsh8AAABekZCedcuVwlM+ETgA7SBLOBCxtV5Ly94xs82XMsv3ICclFcqKyLiCz8ovi/UVAAAAymg7wI+QFagE1ex2MSE7lq314xFi8u5lzvtwdXmomEyoUB7M6Mg0pF28S8ez/vzmyptZegAAAOAFjO2AUEBQtoAk65qK5LsjfvpWNq2m+yyt+6BCeQBiTXXR92isr9hKAAAA4BVZ5GlnOBwCFUqoCoKyQaQ/8kna8Q4Vk6Y/8lfpjxzVFZMJFcrDMdbXdDwz1tcPii97JtXP66beBwAAAATBA4mrEAAISsfI7MiB6IVj5tQuZeyHuisSQXkcLqyvHySgB3sLAECkpONZlYrPs4ysAjDwXYAQQFA6QvpTryWp9RhMf6RKJbIMBOURGOtrOp6ZD/YP5ZeepuPZBamvAAD+YO7LVtql/c+nBYuoc43NxnQ8y/5xIyELj/L7A2Kzc7T5eZPaCXuRytkxFTPYgbG1SkXymOtwI8GfpiLpXFcgKI/EhOik49n9kU2wZZzJDkTrs6cAALqAVTHM/64iDBU4k1+vC4p0PNuKDdLYlhg9FTnz4eoxnfS6fhoOQkYnZJs9tiugyCFwusdSvK0o6m2H2ZP8SsoGwUcG1Ukl2hr7URcEZT0GcsPQ3JX5KNZXdqBhL+l4dn7kIGEsddAZpMJ4Loue7JoJufJyIpuZ5teXdDy7e1lA0DIBHcMSjpeWe0D72j6p+JqFf8baDDAL/WcRpy+OA7NZoHqkDSNWzL6jwMpOoWRrvW3rO4WgrIFYXwcurK/s9oAlFvOVkwuNTQzLUpfIgy6Rh9zz68MuINGZjmfPCudlO7+5InG5BLnffVF4qU/zmyt1J4akZWeLy0xAdiHMxCxA3qfj2fKlTwZhGSNL7KffSSe9vlzjl4Fd39nn9+psE7G5zBwHvgtMEfCXIiIvPXFxZHxMJ72Pjl57K2vzkbZ9tKatVW3sR10QlDVxZH19k45nIxcLLvATEY/2LmvTC4e3ud9fENG5FoH5IP1brd60djBVSF8+MaJpfnPVqFUkILSSqFXOr1Qes2umK+JxF+b6/SrCcuDxtQpwECIi+zWqNz7zVn4ZQZT1vbUuEDKkPzITkJpr3RBwYh9VsLWupRrpzVoFQamDC+vrdTqeTVkQxEs6nvWtnT6fdvnyvJFfLw/ydDzbvO6m3lypR0/X4FZpnM9AS/DEhIg3DcF2f+x9TTZe7OoEIRDFmMXpX+l45qQSDN3CLH6bCPXIo7DoDhHzPj+KuHSezFmG2C8HAVaBNdhaYTaq517J1jr1sS8XQamAlfqqYQXLOJEvNEOFI0IW5deyKA51MXxmWey2EgzSev+WESnpeLZWePi9NcKFzZyfaLU6mY5nTx1aVGrxUUKH+gT3QA0ucoEzTrGE5LGz9mLh+3N20vtkhs83cM6zDe6Q1yd1cBZmI7bW6yPXJ95VrYtAUCphLHLSX6RpVTQL2+v5zdVtq28OaiPfjVGEC+ITS1xu5D22mTp5q7Sxc60ooIJHehP7Cu9jU6OqjZg8DvNMMpstlwRxge+ItXWK++AHPsp5GWj2WFpW1n6H+3M3sinuohp5LlXeYzdGWklrPRYEpS4D6TXTvBGOJPWVakmARCwkizgTMXebjme3Lzfo5oXlQkRl3Wuwj6D8Aa0da58s0l3CfHYPiErwFamQTTvYo1eVNy/X8KR3rSgw/nJ/2N5yL2JN/ZmUTnqXsn445ru8tQRuUPfq//PgGKJBRJ+2LeFEFsgQEKY/Uix6XzpYWTmRHpBH6RNtDBGwGg+Is6aP3XO0xDX3svbIRCUJ4nAoThe20lf2hJjcy8nLmKBJj83O4zDVyN+SJPnnfLjqa4pJsyFiPpd00jPf469HfJezYzufD1eqleimoEKpjLGnykJU0z7wzrymZwEoUIBYA9ll/Y4R0n9ICvKgwWrlVCkJcEBFTTWMZ4nTonWoVMLBuAzkkd4yzfyJLvC7EeFGeHT9RFTAacXPCtk51sXjbcjOoVChdMNAvsSaTEWsgKdI+AW7rD/zLuvhauKHSTjQRuGl3kmqaNfxalQI1OaE5wn4AGKyFiasB8dHOWYj+9f5cHXqouJnvrvppGde80/ZwD5ETJr1yackSf4lxxbF3GAEpQNkF177Qj9hQeYv0iv5lSCBUk5kPl5TO6pa11+nd4AVw3i2zPb0ijcO2jMAKoOYVOGDnEf4TmYb/ZdYWrVnR54bEZ9Oes/y3T3UuWNE7n/nw5WxtbYyDsYlCEpHyOyvtfKrv2uqygPVMfNCeTBW5osE9rhG60HS9Ye1VhgPYtI/PvA8CYpoel/FJkh1TYdbOZ9dZSu20X+LUHOR1mqqkQ8SYvShRjVStW/TN+ihdMtAyuGaGKvSBTPF/EDEpEa/XpcwC9lnlwPXZTbsvYL9+Kzj/cuE8cTNiFnHwRCF+0XSXBe4edTIghu7dh07S2lNdEZ+OD0+H0FQOsSEHqTj2SdJvNTiTBYBpHy1jJkRipg8GjNw/cmxDVIrHKmT4TyE8RzFRvqo63DR4GL7rQT0RNHDEyuyuG0LjX50mykzZdV5a6poocwrrMFaxPPCVVBUNu/zyLXDRo5v6jLIylcQlI4xVRhJfdVYmGV8kNmULAJaQqxiv3fyzeth7K+PrtImTVUxHc82CosXYzU/7aArIOYwHrMwsT/P54LRCE8l4vCxie+C3GMuGhg6TpXSf9oUlGqbQbJYJ7TODaNIWws28r6mrnoOrWrk4Ij1QpYiG0VSax0QlM3gwvp6G1NPRUhIUEnnx0kosXBs4V5Iz0NdBl2ybQYSxrPNiUD7YZ4Xg42IQE1kw/DhpUfqe9pwHfvVLt7KNcgYEX+J5VmP9d0dZxFVKRsZ7l+zGrkUoeusWhoaCMoGEOvrZ6WFbcabdDwbuexDg1Km9H+o4drCfat03V13bDGkFcajufHyHyMSuzjLUt7zSAKtRsrPksQSq+AnbQpKletN0kixurplEHiV8k4EmrMN+5rVyERSZBexJbRqgKBsjpEs0jRvqB/F+srOckOIfblpy87SqrioVV6k6mFbqTLb24X8d02b9i6cWbjNQjwdz5YKlsGzjvWaeRfGg8X/e9iU+WyMVVzOrdbGVh9B6TVtWpK1Fs5sfrvH9FKeByZ2Gqn0yYZG7fWbSZHVO6q4QFA2hKROZrMKNZlifW2UJm4ma/lcH1xuFkjVw37w/LRglz6uS7kRuxSYLvu4pko9aIOicxQbstGg8Vmv2exyg7ERi6jUaqU4w/bqJ1JRabOyV3uRT3WyUfoBuGnWloh0Jn7l2rmWZzeuMscwh7JBZIf9s/JPfCNpo+AYOc+uHorb11lFN1dmYXfrw+LOfGeNrdock1gO7x39qLey4eKChZzfuryX3sLYYVRIAMj94VfFIyWYx080epnroPEc6vo83ybx9VxvZP1r5jFeuJgXmVFzbiQcCYKyeUYOYrhHUlUAt7iw7Jjvwq/zm6tTEW7eWlVEXPZFWK4d/AgnliixCWr1ZHRhYaTxHrcEV7lHAo+0NnkQlH7S9j2n1jNJqkQuU4rhR97IrE8f2Epf5L/nw5Wx4l47FJEX6aQ3TSc987z/wneueRCUDSOLW+0HxEmkcdHeINUz7V0uU5G8cDyLUR0Rlhdy/JqcicXWBVrVsqgFpeL3fNHBMSttoVVRpnXCM9JJ77LBXvZCFARA2xXWLtLmOc9E5H/nw9XpfLgauEpqNcJZqpGZ/f891cj2QFC2gFhfta2DLi2DoFs9277s2H2vSAa76JaE4f8q2UkznNi3xR6oUVV9IwP/Y0XrHoLdtSHE1XCn8NPOOmLpDom2g2yWCq/h+7pkmfv1WTZLd/3K/o6220yLNtwG92LBPxcR6TKp9dJUI5Mk+Z9UI1vddIHvEMrTHgOxkmjuptxKWiaVAUWkaqbVO2nE12Us4Rfzm6uFnJ8Hpe/yO2PfdmT9NQ+g3xVe5zrGSqXY5jVsQoTxNM+t7M7X5aILwVMhIDPy2rbtadhdfVrsb60wGJXvudhLs+A6rXFLdam66anhMnpqYhajwriPtdzbHq3v9RPjP/RAULaElfr6h+IRZNZXLCa6aImHqMRkhsxZ1RSVA0c781qCsm8qORFu3GhVh7HfN4xcgxuFjS968T1AFs8+XEd1n1W+9OVuZUi++nNFhJSpxi1EXJr76Eftn3MglUS8i/OhjSQED47cXLmXz+YB4egeLK8tYqo7Dqyv72RWIuihdT4HsVZu5H2pnSel1/kBEYAa1sCTSDdttM47grIdNCouCMqWEVGy8KTSVfc75YOgXL5kFTQgnoy4lJ/zb+VWkIOR/tsgqRmwk1lv/zkfrvrz4WqKmGwGBGX7DBzceKb0wugg4lzjwX4vGwjRIr3BGhaaM4d9ilqfQVSjehTDeO6w3LcGNuPAERHw6ItNVCFMpW1Rczcfri6bFhRy3tqu/gXV62+q8umkd51Oek81AnZsEclzqGEQlC0jiy/txemJBzezWNCqRHViVqgE9WgEFTipAIqo1zi+2MJ5qE6Gj4agJOm1BayQka8OZx0fSq1AHrHttvle7k04TFs/3MxZbDm0Jwi3gaS0LmRm5O91vjOIyHahh9IDzNgIqRBoNuB/kIAeAhbqoSFs7nyeL+mAkdhU6tB3uCkyVepxiSKcRzGMZ8P9plU07jGxOFsGgVj+Tj1OqKzr5mhzc2LrySburVLf/jF4uzlkLK3y+fgSYgQKICj9YSA7zJoXlxGqF1jQjkMqUBqfR6eqNrJBMqq5O/3GYfCNlqCMpY9Sa+HFqJAWMZtW6XjW2fef48yjSl+o1N0calPQLDzpm2tzg82rzSGpWPflecO1GSFYXj1BKljaFZkzrK+10Njh7mrVRuN756TCINeaRhjWSSSzX7G7AoDNJvD+SS82t+QcthXO03rl2wRMaVpawW8QlB4xv7m6VRokbPMh8kHsLtF4IEYdxLMDjfftckGi9bkELSgJ4wGAAjTuj2318G0VxLAmnQvLsnqCn6T95Z0HhwWOQVD6h5PU1xhOTAtoCJpOnnsRF3WrgM42QowtV+k6eys9iKFCdTIutDckoZtoXM9tVaJ8cwS1JSg3YjNtBElpvZWU1q9HprRCwCAoPUPseNp2jTfS0wYVEZFQ92a4jXXuZEXq7nJrhlQVoSWCgkzwJYwHAAqobXdtORDJt2duk84Nkyr72czBnA9X5677SMXSakZ9PIql9QOW1u6CoPQQGb2wVj6yj4FXUppGozrWVbtrRm2RkY5nLhcmWoIyVNurlhCmOgkQDxrXc5trDd8EpevjyYvIa5eW31xf5P+kL9LXpGJoEASlv7hYpLLwq46GoOx01Uaq7XVtpc4WJlI91ti4CTWcB7srAOQJXVD61svt4ngaFZHJdyHZpy8SdsHYEE8xi910PPukNN4gw/R7XUv4D+xGozLWZbtrxmNNW6XrQKlbhZmZicShByOsFMN47js2YxUgZu6VbJK4ofTZiOtp2lTokMyLHMgv+iFhJwhKjzHW13Q86yvbCcxrLlgE7qXuA7Hr/ZMZD54LyoWIyroPy3fGUh7QdUV1EgDyaG02Iyh1WMszatGgiDy3RCT9kFAZBKX/mIv6T8WjPJFFYJtN8yFQ90aKmPxO3fPgdGFi0mjNBosk0tVlEMLcV+Uwnq73CQPEwnI+XGm1aXg1VL9lDt1kXMsabeE6VCdDRGRfnmGHFjA2crxTCeaBjoKg9Byxvn6W9CwtjPW1z2KwGKW5naRefqdu/0gTO6TTLglKwngAoADNexchLYIRhemkt++PtSEiT0VE9o/oh9xa9tvXtU6F9wkRQyhPGIxkF0iTaTqesYtYjMZ5wVL8fUNEI+nVqe1VjlHj+joTi7rvYHeNF9ejdiBONKuTbeOV+2rHCBUzp/nXJEn+OR+uLubD1W0TYjKX0HpouM5SjtkEAQ0i+s6AAlQoA0BseVy1bZQAACAASURBVAMZFqtFZn0NYQHcNBoPJASlHk1sfNxK/HldBj6PiyGMBwAKUJulK0Eu8DNbcS5lPZGNpdGahFarGnno/T8LA2pE8EK4ICgDwVRRHFhfTZDIJUPJ9eGc/sBSIZjH9flcKAlK38N5qE4CgM1n5cAXnE8/YoTjf+fDVaMbjTVFZCIV1GnTxw3hgqAMi5HcHDT7yoz19cJUQbtwAitSd4e17uxF+BHnCxQjANPx7F5ptlZfMS1RDcUwni391wBRsAmk7ztYRKyHMuZjI8+uaZMVVIgDBGVAOLK+nskDRc3yEgF1BQwJrz/yVFPINBVBP1USlNc+CkrCeAAgR9+BcGBkSINYIvLYYsPWsrSydoGjQVAGhlhf75RSKTM+yGxKbJo6sLP3I3Xtn40sUEzVLR3PNgoOgDNPreRa/dI+iuWjMJ9TgIcNoMGvjgQEgtIxCiIykVaUadP9nBAvCMowua7hiy9jyoPglbq2QHb5wmWh1Kc88Gl0jKTPaljllyGG8YhwvJDArXPGGkDHMWISp0FAKInI15mRBOyANgjKALGsr38oHr2pqozmN1f0U4A2dXc/mwx5uFUSlO/T8ezao97kzoXxiIiuE0oBECOIyUBQEpGFMyMBtEFQBorY87RCRDI+ivWVCls92Pn7kbrfp8aqSRLOUzeVNmPggz1Uwng07hMmjMfrhajM1r2WX4hIgL8xwuK6A2JysGP2YxlPvgguJRGZSErrgs0DaAoEZdgM5EaobX3t7BwpWZDWBUEZNlMlQelLOE/01UmEJMBO1uY+0FDoStvrh7OKQmxjVe5a3URXFJGvzIcrZoxDoyAoA8aR9fVNx62vDGWGhQjBusLEl3AeLUHpZRiPWFtvlccpAcSCmV89ajB4xec5lGvZGHuIUURaLJVfD2AvCMrAEeurlkUv4zodz6Yhhm8A1EU2ahZKScqthvMohvGsfbwfpOOZVs8rQGwsxeLa9RaWpWwSLtoOonEsIm1IbYXGQVDGwUD61LSsXieyi0ek/nEgxH+k9sOthUrfrZKg7Bs7ZovhPFFWJ8XiulDeSIN4yCo05x2sXC+lItnVAJatbOItfBiJkU56WTDYZYPfxa5vIkALICgjQIJEjEX1d8V381ZSKqOZOdcUVHZ/xIQ8peOZT4e0FznmtUIg0IksJhrvP9QM45HFmReImHxg9AfswFgaX9s2pDJ0KgLT/nUayfcou0ZHHR0HkfVDms+99XuVJSLbSphGUELjICgjwQg/sbdp7tiPxPqKfQK6yFRpk+a6pUAbrerkwrN7AGISDmKf7TOd9E6t/vnMmZOJ0AtPg562VhXOmw2fBllaIrLtfshTqwrpw5giBCU0DoIyLlxZX0kLgy6iJShN0NVFC+N4orO7mg0uxCRoI7bIzCJaaBVNJ72sspkUiM6kAfv1Vp7vDyKiumZpfRXQ8v7btrKeWlVIzfFtddl0tEoNLYOgjAhH1td3pvJpwn+6fn6hW0g4z51SL+W1osDbi3IYjxe73caCr/RZAByMLNKzhXqpmMtVO5OCLIIq2QTZ62c/87FtAdUSa6sK2/p9SDYVMhHpa/82azVoBQRlZIj1daC8iz81/VhYX6GDaKW9Nh3OE1V10lR4jQXfg0MB2Emu2pm0mfIcIJusAutDoE7yd/9tJiJDcEeQewGtgKCME7OY/FPxnZ3ITaqxCguAD8hYno1Cta+xcJ5Iw3g05oLGyCaXKv0gFTDSbyEUvOmFzEgnvUtLRIaUEnyH3RXaAkEZIZJQ+SlJko+K7+69BPSw2wpdY6p0LQ0aCueJKoxHHBexC6S1NV7nOReq8WiP3tl3D5a2BwQl+IpXiazJ3zbly5aTWeuyldYKgFZAUEbK/OZqJH1U2tbXC6yv0DG0BOVbsY673kGOLYwnJKvr0vrnp4LqYcazL72pAI6x50I++FJBk37ISw9DdY5l0NE+W/AEBGXcaFtfz2Rxxy4YdAYJu7pXWnRcu7x+FMN4Nj4IHqlONm052+6oEP5UPWSDDeAnllYfpDcbJ9IPeSlro5jSoj93dHQMeASCMmIcWV8/iPWV3XXoEgslQTlwvCFDdbI6WY/oowhD7PwANZkPV1VSbBsjnfTs+ZAh9UNWxfRNsskPrYOgjJ8sTEfzRjrNxaIDRM385srYvTWCYU5M1c28nvb5UgzjSRrq9dyJJLu6WACaUTD0gwNESG4+5GXkYV5GTBKWCF6AoIwcmaVnbjhfFd+pGdQ+Mn2aXT+/0CmMyPqg8IZdhfNoLSzuPLFxai+UjG35uoEeVgBokIitrLv4bT5cMSIEvOH/+CjiR3biPyu/0Y9SQQDoCloi8K1UE7XREmCtVyeFvuJr/Tq/ueojJgHiwFhZ00nvNp30niQr4veOiEmTkvsfxCT4BhXK7jBy0ENwK7uCANEjPclrpUWLajiPchhP61ZQEdxa96pfXViMAaA5cqmssVtZyzCFgRFpruAjVCg7gljYtC1kptJCMzjsRKmS7csDVGtXWLP6lkQYxqO1UXWHmAQIE2NllSqkCc76K0mSL9In3jUxafq+/2XCdxCT4CsIyg4hlYc75Xc8cmTfawtu1vqc1n1Fj1KFF5IOWpczqSrWJrYwHkFjE2I9v7kisAIgEEygTjrpDdJJb5pOes9iZf3Qob5IG2Nt/SRCcuDL/E6AMhCU3eNaaUGcceLRIrQ2GsIlHc9qCyjwE6n0a8370hI7sYXxJEqCEjEJ4DlShRxJFfJ/UoV831FL61JE5L/nw9X5fLgaISSrI+FM0BL0UHYMK/X1D8V3bqyvJvCCwbrfuZChzhAnU1nw1OWdqS4qBMVoCSefrt+6roc7ZuUC+Ic11iPrh+yacNzK7NtE1gnm/v80H65YM9SHzfwWQVB2ECP80vHsXtEmZ5jK4hjLKESNsY6n49lGKTRmUGd4v3IYj0+Csu57YqQRgCdI5SibDenKvroVgfaQCTZEGkBzICi7y0B2xrR2BzPrq3bYSBtoiQX4Tt2AlbWH5/FWYurrUktQKl5vMQXX3DMeBKA9WqpCPs6HqxjWHwBBQg9lR3GU+vpOK2ikZeouRvHx6+Jj1Vurmnd0OI/06mpYb5PIBCVVCYCGSSe9SyuRteu9kACdA0HZYcTitlQ+A7eE0uDjjx2pgN0rvc1jN2G0NoRiq+jROwngGDMXMp30rtNJbyGJrF87nMgK0HmwvMJAFmBau4hnYuELeT6lOR9va/x9BOWP1LW8+ioQpkp9yO/NPNcj+o+1rrHY5jQiKAGUERvrpWVj9a0tBGcQQItQoew4UpnQDrD4kI5nWoPJ26CuxZIHmy5eBj1JhX+j9HIHVRvl+ooxjKc2BIMB6GCN9HgQG+sfUoX0MWMAay2EvO4MHiqUYBZgt9LHVacql8ekvl4Eurira/+rO/IgNuoKbJ/tmAtZYNXlWoJ+qqJld42tOgkAR2JsrFYF8hKRBgBVoUIJGQOJ3dbiLGDba10BQ0Lsj9RdlPgsKA8Rgbs4q1rVJ4wHADQwNtZ00uunk940nfTMffYvCdN5F6KYNMFAHhwGtAeb+S2CoIQXHFlfP5oqZYBnuHYPVqDvWx0l67O3VW65brSCrapWHQnjAYCjKEhj/UM2qGLYCEVQdBs+/xZBUMIrxvrqYOZfcBUQJZsuN7bv1D4P85sr30NWtL7j7ysmJGtV/qPqnQSAn5E+SJPG+pBOet8cp7GanvK7Fj8GKpTdho38FkFQQh7t2ZRv0vFMu/LZBHWrTtzYvlP3PGiF3rhkoWgX33n9KYbxbOc3V9hdASLDEpDZOI8/kyT5XTkjwcZsQn9OkuTf8+HqfD5caa8hDgFB2S7aBYlDOZE+YGgBQnngB0w1KB3PPhm7quKZuU7Hs9AWr081H8A82L4TcyDPC6ainY5nC6W+xsGevkzCeADgFStIJ/vVhHXVzOA1ya+L+XBVdI9etzSP8swI6vlwxeigdvChPeWS51s7ICjhJ+Y3VyNJfdV6IJzIBf4Q0NmuK2Rc7QaHRt3zEMp35lZJUL6RdOSfFkTKYTxaYUIA0CAtCcitODHMr4f5cLVPODy1JCgT2XQLeQ421KOPoGwHBCWUMRCrjBZvA+srfKhbpTX2xPnNVUgiWhWlQJ4gdpqlsq+1K39dUonUqk4uCeMBCAOTxJoTkE0JtbU8B6dHVPweJSm2DQZmdmYF0Qv6PHqwmf7OXDN8/s2DoIRCHFlfQ0qR0xAy/cCqstr0FV4vJOEzlV6luvRNNbIgHEpr153dW4iRrdy3H0IOnGpRQCYVrKxVqb0hW4MTSaynStk8voi4awdTC2APCEooRayvgy7OVZS+uLoVp37HH2p1BeU2gIRXGy1BeZK37RDGA/ATSxGQj2LDDLLq3rKAPNTKWpW279sfTKrtfLgiybpZfHlefzShVPTSNguCEvYxkJjxLvJY8+F+1lXbq8zhrCuAgnoYyCbEnVKf43WukkgYD3SZjVV9fJwPV8HeU1sWkElNK2sljDBNJ71Ny5vR03TS64f8XQkQn2ym5vO/xPraHAhK2IkRQ+l49lnmVnWNBwVxMOio7VWjMhviedNKe30N51EO44leUHa9dzkSljkBGWzPrwcCMhEr66LhSq7G87MOxunxNZ30Ps2HK+yPDWDEezrp+XI4byR8rs0xNp0CQQlVGIkFr2vWV/MA/lLzNcyw+lGXQlDS8excaSERnCiY31wt0vFMa2d+sCOg5xjWgVmI4QDkuusHuICKpvqYtJfCmmdjCci2bJ9tC8oMY38014QJ6ol2Q81U45IkMZsXFy0L6LYr0zbvZUNnQKXSPQhK2ItY+TpnfVXqo0xEkHdpl0zlYRZwlWmqFEiRCUqtPtyujAq57IorICci2xrTcAgbu+9RBGTQCz1PBGQiVd2FQqCOFj5dg+Yz+ZJOerdyf16EtHEh37EsJT9LT7/IBKRUY23aFJSPnhUfTNrwo9lUwP7sFgQlVKLD1teFwkLNVCmnXbDhSe+kxq70vcJrtIWWoDwx3xutMJ7Aki+3BYukqlw0f7jNIdfYoEX75LH8M4YqgRmcnxOQx35P67KxEm01A3VUMKI2nfS0RilpcSJrmA9izVxK35/t3Mj/uyvOC0apZSIxkd9Dur4z2hwZU8aZ2J+XUqlGWDoAQQmHkFXa2nqAtsFCSRxMpScudtuFlqUo2HQ+Y29Ox7N7pYeqlmVsEdh3r848s3clY1eCRVJ++yG3HoQqJsVKmP0qqgY1ydISkCHY1x88F0XZPcY3ARQybY6M2cdbEZaZJdxZMFUesd7am53PsaXQIiihMpb19Y+unDUJRdHoCTgTsaUxm9FLpJqmtXgIPe594dkiJTS761PNAdlBzyETK2smItusgnWKXIDOhQdD2r2uQlZg2tFAv87iWTBPGWdWpXotz8eF9vUlVuXrso1Aq0o+dfHzm+aXb9++hXz8e0nHszpv8D+kBf5MOp61vVhu9HNJx7NrpfmChrv5zVV0/ZTK5+h+fnMVvPBOx7NnT4SACeMJygYqG1d1ArGMZfY8lCqlJPleWiKytT68+c3VZYU/FwW5/scLT6ppoVUhd5JOek9dnGXdJvPh6pc2f76ZAerBZswx3EnVstb6Ujambi2H0VI2huzXPc3d77dixw0264AKJRzDQCoIXdk1XyiKpfeyeBzEYsmTyqRmml8sw6h92Z0P8QFVdyF94rMjICcgQ+uFDBaxr1540P9oE3oVch+3is9PCINQBeV7SYY92hIrPdYPcm+5E5FYFpJlfsa13JeMo+Z3MzvVPLdCvA9QodwNFcoS0vGs36L1tfHPxUFVdiOiMtwB3d8XxQvlB8d2fnN1WuHPeY+Ep/zZ8nEGVamzScczjcqGF44AsbBeeCYgl7IxmKWuPkbVd+qffdXmPhORIc/YrIJUgf/y/0jjwYMKpQ/PPk2W8lomlbo0dV3G03yR527/0EpnOullTi9jw70MTVRSoYSjkHl7WsEjIXCr/F6/p459T84dhbaQkw2FqYMd/mjmhEn/bdsph6GF8dgsFCq8xhFgfr9u8jzIZsKFB6MkElmcPFmjOp5inItrpa9eeHDO86wtAdmpTWpJe+3SWqHzmKqeVPlisTq/tX4vFJRy/7mVa71/zEaRsbumk96ziNKH0BLLEZRQh+uuBEbI2JSlg11us2AemB7E+c2V92JK0iZHDnf7Y5uVeFuzF7AuIQt0LcuwsTFdpuPZyMU1ZonHrB+vrUrYRoTjg4hHIxyjShHMsKqPFy2f8zI2Vs9U8GEbCmhvyIL/aGwIhkTWqjOo4zqYD1dTCesxc1ONXTaYcDksr7vB8roH5TCWqrTyuYiY+urwR2xkET31rYIgFclrxwu36AKLxBbcVr/xZn5zlZ9zFhTpeKbdi7N5Hf5+wD1Erv3EmhN32eKcuK1tUxXhGPVzyvPqY0ZmY40iTEebgINagqNty2sSsdW56Nwa4SejUn7TCtVJJ71Fds8LxRZPhRJqMb+5uhWxEf2DwmGVMuNMbkof5ecspK+pDfFsW/b6DQmiYMc8lCGjdhbKoUVViaHaO1W+3v6Oi/9uhc2qekW0PXMwib3PsQhZiF542vtos7aCdNh43s/I8YYseIRYnV2ul3zCbLZvMjEpwTpZxsg/M4dCOundZlVbI0ytnkmbO7lWrkWQX5fZbH0DQQkaDGSx04XU10FDu25vsxtxbuH7ZC2An3YshqtwLr8SqbZctFh1+RRjX5egnYJ7yM8NGmNRlREiLjdxfKh2rbNqY8x9jkVIwmEmHi887rtaWzbWGNNYnSLzCbsiMOA72huC3iHi0ax9bdFnj156SX0Vm37mwFrL7+fWvz/L+susFU7nw1Vfeo/7CEroDGbhY/qTuhANLu/1k1QSmyRb+MZ4c95E2Dv5ilS2mw4ouIuokhVTZWOdqzhG2+dYRM666svcxzI2OQHZCYHvmOvI0j9hB9IPOIp8DmkmHhcF/y0RkZjknF7Zs/kldGc+XL2G76ST3jcrjOdluoC5b4Zgo0dQggods76O5L0yO06HaGZy7qDpWWwxpeU+SBpySAEPdkDOk1hVO9VXF5B1NQMB6RhJ/2xjQxbaY9RyMJ1rzL1tnXMs2GvDCxGGRS09F3LfeUGqmInlPHu0/hyCEjpFl3Yf+x2y+brkU0eCrxYNCspNhOd0JNecbzvdeeEYfUBOEZZ4tAWk7/fGbU5AEqTTDLdyLbMh2wE6UqV8FZNi4U+k/91sop3KfzuT/khjaX0W8Xgi/5yJzezvvjxDZAMmsayxXoOgBDVk7l4ndh/F+nopFz6i8jiMLTO6IJ4i5PvS1Cy26OzDEm7Ub3HDKutx6bRwTP7eRc9bV0NYLCIgPcBUcmQAPM/O7jCIOJApXz3MRGHWqnFhCcIHEZSPlq31LLdmXob6DEdQgipdsoOKgL6O3M7hinUojeaKTBsSlNHYXW3kevvV8fXW6R7HPAGLxwQB6S9SeeHZ2REkkKmpDdWmyd9XMkGZ/fdzuWcucyGKmch8GTUiY0LeyRzLIFuAEJTggkFXrK+SQvksi3h2W6thFu2XHeib/IH5zdWigXCe+5jPq1xvSc2F6NZKVO1cqmoZgYvHPP+iB9JvxAp5Tj9lZxi0OJPZNbYl9W3WU5lLNc5v9GZ/JxOeD5mgzPotLftsEJthCEpQp0vW1+RvoYD9tRrG5jrQeKFAWTgOl4myOmlzgKj8yabahTmOVYhMPP4EYjIM5sPVSERlG2OVoEFEYPUjtL4+vMwO//49tq2tNhvZQMnWPo+WQysTi1nOwsAK8LnI/RmvQVCCE8T6Ooi8EfsVEdHnclNgzlYxv5k0YB8PrEFuHQpKE8azqPDngsdyBoxEND7a4rHr1Uab2MUjhM18uBpI8AiiMnLE+vpbZCPmFlI8ySqwS2uEyNT6MxlLq60iyeytZhMsnfRMaM+5EaeyKTYQMRrE8+yXb9++eXAY7kjHszpv8D9dDV7QQKp2LnajvP5cpK9yRLXylbWMBqGH6fv348HRpsOnroQcQTGBpq2qMx+ufonsLUWPVG/oqayHaalYzIcrr/MJ0klvGuoGQtG9JZ30jOAzG3fnWv2PYnf9+vJcH66CeK5ToQRnBDo/rjYykzObO9TlXVfTqzaiKvkTU0eCMnq7K/yNGXZticcQ5jwClCKWwCep5rAZW52tnDMjJINwqERYlc5mbV6XzJs8hlv5bINZPyEowTW+zo9ziljuBul4divnIMZ0szKym+At/WqFLOT8aC6a7rF5xollWbV/McMPokMskecNJmKHzL0lJIN7zoqofIzB/mr1R5peyse6wl4quG8kATaYzxZBCU6R+XExzyDaidg8+9JfmYnrWHdfNyKUpgjJcuSaWCjvzlKdjIACy+o5/Y7QJWQB3ZcAl1u+/z+wlnv9IobgKRmX8RhJVXogfZFGXPbN5sgxL2LZge/M+dE/THfQQ7kbeiiVkEqdlvU12M8lHc9ORVT2I9mBzew2U66V6qTj2YXiaB0TxnNe4c+BR0iPTDb0OlbL6saaBdlYfxw9lPEglZ9Rh4VlVol8iDW9WFwYtyFYYHfdW6QNIUv7/+0QQSjnIKvMGzEZXBo+gnI3CEolREhpzSCK4nOxxOWl/ArlgbmWm+aC6+N40vHsUcm6+Hl+c+V1CEOXkUXGec6yGuvi2BaQPyyA00mvscUGgjI+RFjGshG7i7V1/XQitTtDNtlGPm+u7bu3yP0+s6xuXnIkhqtSB5EIyWv5dfLyPPc8VKkMLK/QCJb19Q/O+HfEFjrN7Ipii73MLTzbtoFsxMbxKA855vjpMVXqHyH0yANy4zmymWSxB+Vki9/HmCso0D6yKJ+KLfzS2owN2Sppj5B4PNYmGQvy/i/lM74OMX9jPlyZz/IinfRG8h6+pJPerXWfzDiV72+2qbwU8Rnsd4AK5W6oUCojvWN1dxg787lIFfPCWqCeWsNuT2tWuLbWDe7Z+mdzbp8Z8+EW+Wz/V/OHLOc3V5e+v9fYKLCrdmU8xzpXgay8uUSFElwgFaFL61qs+1zUZC3P1if5lT1nn9h8qYb1+Wafcauf7SH3Ftlk7O/Y/FhnfZcxbCZ0QVDWWWxRjVHGEkh14HPZQcE5Rhx6ivRSntY4Oob4O0SEY7aZ08WQnKUlHtlchSARUVLnPlsVhCJ0lugFJQAAwC4Qji9srepj5+13AABQHXooAQCgEyAcf2CTE5C4GAAA4CgQlAAAEBUIx0LWOQGJNQ8AAFRAUAIAQHBIEuB5R8Nx9rG1kpnpfwQAAKcgKAEAwFtycxy7Mo7jUDa58R3YVwEAoDEQlAAA0CrWDMcLaz4XNtVylrkKJKnXAADQGghKAABoBOltzM9Wpdq4m40lHklfBQAA70BQAgCAGtbMt7x4pNpYjWVOQBKeAwAAXoOgBACAg0A0qkH1EQAAggdBCQAAP4FodMLSCs+h+ggAAFGAoAQA6Ci5nkZEoy7rTDiSvAoAADGDoAQAiBRrVqM9s/GUeY3qbO2xHVJ9JHkVAAA6AYISACBgSqqM5vc3fK7OIDgHAABAQFACAHiMCMZEehnt3xm30QzrnHjEugoAAGCBoAQAaBEEo1dscqE5pK4CAADsAUEJAOCIdNLLW1ETBKM3bOzQHPoeAQAAjgNBCQBwJNZojXz4DT2MfoF4BAAAcASCEgCgACshtajKSHXRX7a2cJSRHYhHAAAARyAoAaBzFFQWbbHISI1wMJXHp1zfI4mrAAAADYKgBIBosHoWE6uqmInGhMpi0GBbBQAA8BAEJQB4T4lQpKoYL4hHAACAQEBQAkBrWH2KCUKxs6wt8cioDgAAgMBAUAKAKrlqYpFgTLCedpalJR6fEI8AAADhg6AEgL1YITZJThheWn8XkQgZhOUAAAB0BAQlQAfZIRDtiqL5/YzvB+whs6w+0e8IAADQPRCUAIGT60O07aZJroJIPyLUwZ7v+CTC8ZEzCgAA0G0QlACekBOGSU4M5v8f9lJwCVVHAAAAqASCEkCRAlFo20mL/h1hCG1i9zpSdQQAAICDQVACCLl00ozL3L/nBSF9hhACWztd1QrKoeoIAAAAtUBQQtAUVASTAnto2X+jpxBiZCmi8bXySMIqAAAAuAJBCc4pEX1JQYDMvv+OAAT4m7VdbWQ0BwAAALQBgrJDpJNe3r6Zp0zIZez7//QDAuiTF45P9DkCAACAL+wUlDKr7k/5V7OoOaTfJrNcafF44M9vgrLK27HsE2xFmL/zxrPzAgCHg3AEAACA4NhXobQrWoeKFqpVAAA/k+9xfEY4AgAAQKgcIigBAKAadqrqM+E4AAAAECv7BOU7PnkAgFLWtmC0ZjkyjgMAAAA6QamgrBDgAgDQFWybKv2NAAAAAMKuCiWCEgC6BNVGAAAAgAPZJSj7nEwAiIyNVWWktxEAAACgJr98+/btp1dIJz0ziuJ/nFwACJAi0UiSKgAAAIADyiqU2F0BwGcQjQAAAAAeUCYosbsCQNsgGgEAAAA8hwolALTJUsTio/U7PY0AAAAAgfCToEwnvfMkSc74AAFAgXyV8fV30lMBAAAAwqeoQkl1EgCqss1XF7NfVBkBAAAA4qdIUNI/CQAZecH4+ju9jAAAAABAhRKg22zsqiKCEQAAAAAO4QdBmU56F0mSnHAGAaJhKW8kX2XEkgoAAAAAtclXKLG7AoTDOhOHuepiMh+uHvgcAQAAAMA1eUGJ3RXADxCLAAAAAOA9v3z79u3lGNNJ7zRJkv/xkQE4JQu5SWz7qfxCLAIAAABAUNgVSqqTAPXI+hVfBWKSJJlApGcRAAAAAKIDQQmwm6KKYoJQBAAAAABAUEI3sUWiXU18FYxYTwEAAAAA9vPSQ5lOeudJkvzF+YKAWVvVw8eif0YkAgAAAADoklUoqU6Cbyyt4ykUiOaf58PVM58cAAAAAEA7ICjBNba9NMkJQttu+jwfrh751v93UAAAAI1JREFUNAAAAAAAwiETlH0+M9iDbSlNrFCaxJ6RKFA5BAAAAADoAP9IJ72LJElO+LCjZ5l7g485gfjTvyMKAQAAAABgF//A7uoteatoUlAJLPtvjLIAAAAAAADnICiPJ28BtSlLE7V7Bm2oBgIAAAAAQHAYQXlaYIcMjUPHQVT584g8AAAAAACAMpIk+X8g6BC5QVhlsAAAAABJRU5ErkJggg==" class="app-logo" alt="NovaPet Logo">
+            <h1>EXTRACTOR MERCADOLIBRE</h1>
+            <p>Generador automatico de planilla de carga asignada.</p>
+        </header>
+        <div class="message-stack" id="messageStack" aria-live="polite" aria-atomic="true"></div>
+
+        <div class="panels-container">
+            <div class="panel panel-left">
+                <div id="drive-sync-panel" style="
+                    background: var(--surface-soft);
+                    border: 1px solid var(--border);
+                    border-radius: var(--radius-md);
+                    padding: 16px;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 12px;
+                    box-shadow: var(--shadow-soft);
+                    order: -1;
+                    margin-bottom: 4px;
+                    ">
+                    <!-- HEADER -->
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="22" height="18" viewBox="0 0 87.3 78">
+                            <path d="m6.6 66.85 3.85 6.65c.8 1.4 1.95 2.5 3.3 3.3l13.75-23.8h-27.5c0 1.55.4 3.1 1.2 4.5z" fill="#0066da"/>
+                            <path d="m43.65 25-13.75-23.8c-1.35.8-2.5 1.9-3.3 3.3l-25.4 44a9.06 9.06 0 0 0 -1.2 4.5h27.5z" fill="#00ac47"/>
+                            <path d="m73.55 76.8c1.35-.8 2.5-1.9 3.3-3.3l1.6-2.75 7.65-13.25c.8-1.4 1.2-2.95 1.2-4.5h-27.502l5.852 11.5z" fill="#ea4335"/>
+                            <path d="m43.65 25 13.75-23.8c-1.35-.8-2.9-1.2-4.5-1.2h-18.5c-1.6 0-3.15.45-4.5 1.2z" fill="#00832d"/>
+                            <path d="m59.8 53h-32.3l-13.75 23.8c1.35.8 2.9 1.2 4.5 1.2h50.8c1.6 0 3.15-.45 4.5-1.2z" fill="#2684fc"/>
+                            <path d="m73.4 26.5-12.7-22c-.8-1.4-1.95-2.5-3.3-3.3l-13.75 23.8 16.15 27h27.45c0-1.55-.4-3.1-1.2-4.5z" fill="#ffba00"/>
+                        </svg>
+                        <span style="font-weight:600; font-size:0.95rem;">Google Drive</span>
+                        <span id="drive-file-count" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:2px 8px;color:var(--text-muted);display:none;" title="Archivos en carpeta del día"></span>
+                        <span id="drive-sync-status" style="margin-left:auto; font-size:12px; color:var(--text-muted);">Desconectado</span>
+                    </div>
+
+                    <!-- MODO: toggle Automático / Manual -->
+                    <div style="display:flex; background:var(--surface); border:1px solid var(--border); border-radius:8px; overflow:hidden;">
+                        <button id="drive-mode-auto" onclick="DriveSync.setMode('auto')" style="
+                            flex:1; padding:7px 0; font-size:12px; font-weight:600; border:none; cursor:pointer;
+                            background:#00ac47; color:#fff; transition:all .2s;
+                        ">⚡ Automático</button>
+                        <button id="drive-mode-manual" onclick="DriveSync.setMode('manual')" style="
+                            flex:1; padding:7px 0; font-size:12px; font-weight:600; border:none; cursor:pointer;
+                            background:transparent; color:var(--text-muted); transition:all .2s;
+                        ">✋ Manual</button>
+                    </div>
+
+                    <!-- DESCRIPCION DEL MODO -->
+                    <div id="drive-mode-desc" style="font-size:11px; color:var(--text-muted); text-align:center; margin:-4px 0;">
+                        Asigna a <strong>kmendoza</strong> y procesa automáticamente
+                    </div>
+
+                    <!-- BOTONES CONECTAR / DETENER -->
+                    <div style="display:flex; gap:8px;">
+                        <button class="btn btn-compact" id="drive-sync-btn" style="flex:1;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+                            Conectar Drive
+                        </button>
+                        <button class="btn btn-secondary" id="drive-sync-stop" style="flex:1; display:none;">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>
+                            Detener
+                        </button>
+                    </div>
+
+                    <!-- TABLA PENDIENTES (solo visible en modo manual) -->
+                    <div id="drive-pending-section" style="display:none;">
+                        <div style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">
+                            📥 Pendientes
+                        </div>
+                        <div id="drive-pending-list" style="display:flex; flex-direction:column; gap:6px; max-height:220px; overflow-y:auto;">
+                            <div id="drive-no-pending" style="font-size:12px; color:var(--text-muted); text-align:center; padding:12px 0;">
+                                Esperando archivos nuevos...
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- TABLA PROCESADOS -->
+                    <div id="drive-processed-section" style="display:none;">
+                        <div style="font-size:11px; font-weight:600; color:var(--text-muted); text-transform:uppercase; letter-spacing:.05em; margin-bottom:6px;">
+                            ✅ Procesados hoy
+                        </div>
+                        <div id="drive-processed-list" style="display:flex; flex-direction:column; gap:4px; max-height:160px; overflow-y:auto;"></div>
+                    </div>
+
+                    <!-- TOAST -->
+                    <div id="drive-sync-toast" style="display:none; padding:8px 12px; border-left:3px solid #00ac47; border-radius:4px; font-size:12px; color:var(--text-muted);"></div>
+                </div>
+
+                <div class="left-panel-top">
+                    <div class="input-group">
+                        <div class="form-control">
+                            <label for="picker">Usuario / Picker</label>
+                            <div class="picker-select-row">
+                                <select id="picker" required>
+                                    <option value="" disabled selected>Seleccione una opcion...</option>
+                                    <option value="bestay">bestay</option>
+                                    <option value="eagudelo">eagudelo</option>
+                                    <option value="kmendoza">kmendoza</option>
+                                    <option value="ovasquez">ovasquez</option>
+                                    <option value="ptapia">ptapia</option>
+                                    <option value="sperez">sperez</option>
+                                </select>
+                                <button class="btn btn-secondary picker-manage-btn" id="manageUsersBtn" type="button" aria-label="Administrar usuarios" title="Administrar usuarios">+</button>
+                            </div>
+                            <span class="picker-meta" id="pickerMeta">6 usuario(s) disponible(s)</span>
+                            <div class="picker-manager" id="pickerManager" hidden>
+                                <div class="picker-manager-header">
+                                    <div>
+                                        <strong>Administrar usuarios</strong>
+                                        <span>Agrega nuevos usuarios o elimina los que ya no necesitas.</span>
+                                    </div>
+                                    <span class="picker-manager-count" id="pickerManagerCount">6</span>
+                                </div>
+                                <div class="picker-manager-top">
+                                    <input id="newPickerInput" type="text" placeholder="Escribe un usuario">
+                                    <button class="btn picker-add-btn" id="addPickerBtn" type="button">Agregar</button>
+                                </div>
+                                <div class="picker-manager-note">Debe quedar al menos un usuario disponible.</div>
+                                <div class="picker-list-wrap">
+                                    <div class="picker-list-head">
+                                        <span>Usuarios disponibles</span>
+                                        <span class="picker-list-total" id="pickerListTotal">6</span>
+                                    </div>
+                                    <div class="picker-list" id="pickerList"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="input-methods">
+                    <!-- dropzone oculto: mantiene event listeners de app.js -->
+                    <div id="dropzone" style="display:none;"><input type="file" id="fileInput" accept=".txt" multiple></div>
+
+                    <div class="method-card">
+                        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                            <h3 style="margin:0;">Ingresar Etiquetas</h3>
+                            <label for="fileInput" class="btn btn-secondary btn-small" style="cursor:pointer;font-size:12px;padding:5px 10px;display:inline-flex;align-items:center;gap:5px;margin:0;">
+                                <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+                                Cargar .txt
+                            </label>
+                        </div>
+                        <textarea id="textInput" placeholder="Pega aqui el contenido de la etiqueta..."></textarea>
+                        <button class="btn btn-compact" id="processTextBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 11 12 14 22 4"></polyline><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path></svg>
+                            Procesar Texto
+                        </button>
+                        <button class="btn btn-secondary is-hidden" id="clearBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                            Limpiar Datos
+                        </button>
+                    </div>
+                </div>
+
+                <div class="storage-card">
+                        <div class="storage-header">
+                            <div>
+                                <h3>Historial guardado</h3>
+                                <p id="storageSummary">El historial funciona entre las 07:00 y las 18:00. Usa 24h si quieres mantenerlo activo fuera de ese horario.</p>
+                            </div>
+                            <div class="storage-header-actions">
+                                <button class="storage-toggle-btn" id="outsideHoursToggleBtn" type="button" aria-pressed="false" title="Activar historial fuera de horario">24h</button>
+                                <span class="status-pill" id="storageStatus" aria-live="polite">Verificando...</span>
+                            </div>
+                        </div>
+                        <div class="storage-note" id="storageNote">Los archivos y textos procesados se almacenan automaticamente dentro de la franja operativa. Luego puedes tocar uno o varios archivos guardados para ver sus pedidos.</div>
+                        <div class="history-list" id="historyList">
+                            <div class="history-empty">Aun no hay documentos guardados en este navegador.</div>
+                        </div>
+                        <div class="history-actions">
+                            <button class="btn btn-secondary btn-small" id="showStoredBtn" type="button">Mostrar guardados</button>
+                            <button class="btn btn-secondary btn-small" id="clearStoredBtn" type="button">Limpiar historial</button>
+                            <button class="btn btn-secondary btn-small" id="savePortableBtn" type="button">Guardar HTML portable</button>
+                        </div>
+                    </div>
+
+            </div>
+
+            <div class="panel panel-main" id="results" data-results-state="idle">
+                <div class="results-shell">
+                    <div class="stats">
+                        <button class="stat-item" id="flexStatBtn" type="button" data-row-type-filter="flex" aria-pressed="false" title="Mostrar solo pedidos FLEX">
+                            <div class="stat-value" id="countFlex">0</div>
+                            <div class="stat-label">Bultos Flex</div>
+                        </button>
+                        <button class="stat-item" id="colectaStatBtn" type="button" data-row-type-filter="colecta" aria-pressed="false" title="Mostrar solo pedidos COLECTA">
+                            <div class="stat-value" id="countColecta">0</div>
+                            <div class="stat-label">Bultos Colecta</div>
+                        </button>
+                        <button class="stat-item" id="totalStatBtn" type="button" data-row-type-filter="all" aria-pressed="true" title="Mostrar todos los pedidos">
+                            <div class="stat-value" id="countTotal">0</div>
+                            <div class="stat-label">Total Extraido</div>
+                        </button>
+                    </div>
+
+                    <div class="results-toolbar">
+                        <input class="search-input" id="searchInput" type="text" placeholder="Buscar numero en la carga actual o en el historial guardado...">
+                        <div class="selection-hint" id="selectedInfo"></div>
+                    </div>
+                    <div class="results-meta" id="resultsMeta"></div>
+
+                    <div class="table-container">
+                        <table id="dataTable">
+                            <thead>
+                                <tr>
+                                    <th>Sel.</th>
+                                    <th>Proceso</th>
+                                    <th>Numero</th>
+                                    <th>Picker</th>
+                                    <th>Picking</th>
+                                    <th>Revision</th>
+                                    <th>Guardado</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <!-- Data will be populated here -->
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="results-actions">
+                        <button class="btn" id="downloadBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                            Descargar CSV
+                        </button>
+                        <button class="btn btn-zebra" id="printZebraBtn">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
+                            Imprimir en Zebra
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <section class="panel panel-right order-lookup-card" aria-labelledby="orderLookupTitle">
+                <div class="order-lookup-head">
+                    <div class="order-lookup-head-copy">
+                        <h3 id="orderLookupTitle">CONSULTA ESTADO PEDIDO</h3>
+                    </div>
+                    <span class="order-lookup-channel">Mercado Libre</span>
+                </div>
+
+                <div class="order-lookup-controls">
+                    <div class="order-lookup-upload-row">
+                        <button class="btn btn-secondary" id="orderLookupLoadBtn" type="button">Cargar Excel</button>
+                        <div class="order-lookup-file" id="orderLookupFileName" aria-live="polite">No hay archivo Excel cargado.</div>
+                        <input type="file" id="orderLookupFileInput" accept=".xlsx">
+                    </div>
+
+                    <div class="order-lookup-filter-row">
+                        <label class="order-lookup-search-field" for="orderLookupInput">
+                            <span>Pedido</span>
+                            <input id="orderLookupInput" class="order-lookup-search-input" type="text" placeholder="Buscar pedido de Mercado Libre">
+                        </label>
+
+                        <label class="order-lookup-filter-field order-lookup-filter-field--state is-compact" for="orderLookupStateFilter">
+                            <span>Estado</span>
+                            <select id="orderLookupStateFilter">
+                                <option value="">Todos los estados</option>
+                            </select>
+                        </label>
+
+                        <label class="order-lookup-filter-field order-lookup-filter-field--route is-compact" for="orderLookupRouteFilter">
+                            <span>Rutas</span>
+                            <select id="orderLookupRouteFilter">
+                                <option value="">Todas las rutas</option>
+                            </select>
+                        </label>
+
+                        <div class="order-lookup-actions">
+                            <button class="btn" id="orderLookupSearchBtn" type="button">Filtrar</button>
+                            <button class="btn btn-secondary" id="orderLookupClearFiltersBtn" type="button">Limpiar</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="order-lookup-output">
+                    <div class="order-lookup-summary is-empty" id="orderLookupSummary">
+                        <strong>Sin resultados</strong>
+                        <span>Carga un archivo Excel para ver solo pedidos de Mercado Libre y filtrarlos por estado, ruta o numero.</span>
+                    </div>
+
+                    <div class="order-lookup-table-wrap is-hidden" id="orderLookupTableWrap">
+                        <table class="order-lookup-table">
+                            <thead id="orderLookupTableHead">
+                                <tr>
+                                    <th>DATO2</th>
+                                    <th>ESTADO</th>
+                                    <th>RUTAS</th>
+                                </tr>
+                            </thead>
+                            <tbody id="orderLookupTableBody">
+                                <tr>
+                                    <td colspan="3" class="order-lookup-empty-row">No hay coincidencias para mostrar.</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+    <script id="embeddedHistoryData" type="application/json">{"version":2,"documents":[]}</script>
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
+    <script src="app.js" defer data-app-script></script>
+    <script src="drive-sync.js" defer></script>
+</body>
+</html>
+
