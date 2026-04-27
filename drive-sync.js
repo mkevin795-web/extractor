@@ -30,9 +30,11 @@ const _state = {
     isAuthorized: false,
     pollTimer:    null,
     knownIds:     new Set(),
+    knownFiles:   [],
     pending:      [],
     processed:    [],
     tokenClient:  null,
+    panelOpen:    false,
 };
 
 function _getMes(d = new Date()) { return `${MESES[d.getMonth()]} ${d.getFullYear()}`; }
@@ -54,6 +56,9 @@ function _setFileCount(n) {
     el.style.display = '';
     el.textContent = '\uD83D\uDCC1 ' + n + ' archivo' + (n !== 1 ? 's' : '');
     el.style.color = n > 0 ? 'var(--text)' : 'var(--text-muted)';
+    el.style.cursor = 'pointer';
+    el.title = 'Ver archivos del día';
+    el.onclick = () => DriveSync.togglePanel();
 }
 
 function _highlightNewestHistorialItem() {
@@ -163,6 +168,70 @@ function _renderProcessed() {
             </div>`;
         list.appendChild(row);
     }
+}
+
+
+function _renderExistingPanel() {
+    let panel = document.getElementById('drive-existing-panel');
+    if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'drive-existing-panel';
+        panel.style.cssText = [
+            'display:none',
+            'margin-top:10px',
+            'border:1px solid rgba(15,23,42,0.10)',
+            'border-radius:10px',
+            'overflow:hidden',
+            'background:rgba(255,255,255,0.96)',
+        ].join(';');
+        const syncPanel = document.getElementById('drive-sync-panel');
+        if (syncPanel) syncPanel.appendChild(panel);
+    }
+
+    const pickerSel = document.getElementById('picker');
+    const opts = pickerSel
+        ? Array.from(pickerSel.options).filter(o => o.value).map(o => ({ v: o.value, l: o.text }))
+        : [{ v: DRIVE_CONFIG.DEFAULT_PICKER, l: DRIVE_CONFIG.DEFAULT_PICKER }];
+    const optHtml = opts.map(o =>
+        `<option value="${o.v}" ${o.v === DRIVE_CONFIG.DEFAULT_PICKER ? 'selected' : ''}>${o.l}</option>`
+    ).join('');
+
+    const header = `
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:8px 12px;background:rgba(0,172,71,0.06);
+                    border-bottom:1px solid rgba(15,23,42,0.08);">
+            <span style="font-size:11px;font-weight:700;color:#0F6E56;text-transform:uppercase;letter-spacing:.05em;">
+                📁 Archivos del día (${_state.knownFiles.length})
+            </span>
+            <button onclick="DriveSync.togglePanel()" style="
+                background:transparent;border:none;cursor:pointer;
+                color:#5C6F63;font-size:16px;line-height:1;padding:0 2px;">×</button>
+        </div>`;
+
+    const rows = _state.knownFiles.length === 0
+        ? `<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">Sin archivos en la carpeta del día.</div>`
+        : _state.knownFiles.map(f => `
+            <div style="display:flex;flex-direction:column;gap:6px;
+                        padding:9px 12px;border-bottom:1px solid rgba(15,23,42,0.06);">
+                <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
+                    <span style="font-size:12px;font-weight:600;color:#17301F;
+                                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;"
+                          title="${f.name}">📄 ${f.name}</span>
+                    <span style="font-size:10px;color:#5C6F63;flex-shrink:0;">${f.folder || 'Drive'}</span>
+                </div>
+                <div style="display:flex;gap:5px;align-items:center;">
+                    <select id="ep-picker-${f.id}" style="
+                        flex:1;padding:4px 7px;border:1px solid rgba(15,23,42,0.12);
+                        border-radius:6px;font-size:11px;background:#fff;color:#17301F;">${optHtml}</select>
+                    <button onclick="DriveSync.processExisting('${f.id}')" style="
+                        padding:4px 11px;background:#00ac47;color:#fff;border:none;
+                        border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;
+                        white-space:nowrap;">Procesar</button>
+                </div>
+            </div>`).join('');
+
+    panel.innerHTML = header + `<div style="max-height:260px;overflow-y:auto;">${rows}</div>`;
+    panel.style.display = _state.panelOpen ? 'block' : 'none';
 }
 
 function _applyMode() {
@@ -311,8 +380,10 @@ async function _scan(firstScan) {
         const files = await _getAllTxtRecursive(dayId);
         if (firstScan) {
             files.forEach(f => _state.knownIds.add(f.id));
+            _state.knownFiles = files;
             _setFileCount(files.length);
             _setStatus(`● Monitoreando — ${files.length} existentes`, true);
+            _renderExistingPanel();
             return;
         }
         const newFiles = files.filter(f => !_state.knownIds.has(f.id));
@@ -420,6 +491,29 @@ const DriveSync = {
     },
 
     stop: _stopPolling,
+
+    togglePanel() {
+        _state.panelOpen = !_state.panelOpen;
+        _renderExistingPanel();
+    },
+
+    async processExisting(fileId) {
+        const file = _state.knownFiles.find(f => f.id === fileId);
+        if (!file) return;
+        const sel    = document.getElementById('ep-picker-' + fileId);
+        const picker = sel?.value || DRIVE_CONFIG.DEFAULT_PICKER;
+        const btn    = document.querySelector(`button[onclick="DriveSync.processExisting('${fileId}')"]`);
+        if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
+        try {
+            const text = await _downloadText(fileId);
+            const bulkCount = _countBulks(text);
+            await _processFile({ name: file.name, text, bulkCount, folder: file.folder || 'Drive', picker });
+            if (btn) { btn.textContent = '✓ Listo'; btn.style.background = '#e8f5e9'; btn.style.color = '#2e7d32'; }
+        } catch(e) {
+            if (btn) { btn.disabled = false; btn.textContent = 'Procesar'; }
+            _setToast('Error al procesar: ' + file.name, false);
+        }
+    },
 
     init() {
         const attach = () => {
