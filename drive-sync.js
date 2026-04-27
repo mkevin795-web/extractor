@@ -35,6 +35,8 @@ const _state = {
     processed:    [],
     tokenClient:  null,
     panelOpen:    false,
+    browseDate:   new Date(),  /* fecha del panel de exploración */
+    browseFiles:  null,          /* null = usa knownFiles del día actual */
 };
 
 function _getMes(d = new Date()) { return `${MESES[d.getMonth()]} ${d.getFullYear()}`; }
@@ -171,6 +173,44 @@ function _renderProcessed() {
 }
 
 
+
+async function _loadBrowseFiles() {
+    const panel = document.getElementById('drive-existing-panel');
+    if (panel) {
+        const listEl = panel.querySelector('[data-browse-list]');
+        if (listEl) listEl.innerHTML = '<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">Cargando...</div>';
+    }
+    try {
+        const dayId = await _getDayFolderId(_state.browseDate);
+        if (!dayId) {
+            if (panel) {
+                const listEl = panel.querySelector('[data-browse-list]');
+                const label = _getDia(_state.browseDate);
+                if (listEl) listEl.innerHTML = `<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">No se encontró la carpeta "${label}".</div>`;
+            }
+            _state.browseFiles = [];
+            _updatePanelHeader();
+            return;
+        }
+        const files = await _getAllTxtRecursive(dayId);
+        _state.browseFiles = files;
+    } catch(e) {
+        _state.browseFiles = [];
+        console.error('[DriveSync browse]', e);
+    }
+    _renderExistingPanel();
+}
+
+function _isProcessed(fileId, fileName) {
+    return _state.processed.some(p => (p.id && p.id === fileId) || p.name === fileName);
+}
+
+function _getProcessedInfo(fileId, fileName) {
+    return _state.processed.find(p => (p.id && p.id === fileId) || p.name === fileName);
+}
+
+function _updatePanelHeader() { _renderExistingPanel(); }
+
 function _renderExistingPanel() {
     let panel = document.getElementById('drive-existing-panel');
     if (!panel) {
@@ -188,6 +228,15 @@ function _renderExistingPanel() {
         if (syncPanel) syncPanel.appendChild(panel);
     }
 
+    /* Determinar qué archivos mostrar */
+    const today = new Date();
+    const isToday = _getDia(_state.browseDate) === _getDia(today);
+    const isTomorrow = (() => {
+        const tom = new Date(today); tom.setDate(today.getDate() + 1);
+        return _getDia(_state.browseDate) === _getDia(tom);
+    })();
+    const files = (_state.browseFiles !== null) ? _state.browseFiles : _state.knownFiles;
+
     const pickerSel = document.getElementById('picker');
     const opts = pickerSel
         ? Array.from(pickerSel.options).filter(o => o.value).map(o => ({ v: o.value, l: o.text }))
@@ -196,29 +245,68 @@ function _renderExistingPanel() {
         `<option value="${o.v}" ${o.v === DRIVE_CONFIG.DEFAULT_PICKER ? 'selected' : ''}>${o.l}</option>`
     ).join('');
 
+    const processedCount = files.filter(f => _isProcessed(f.id, f.name)).length;
+    const totalCount = files.length;
+    const dayLabel = _getDia(_state.browseDate);
+    const mesLabel = _getMes(_state.browseDate);
+
+    const navBtn = (label, offset, active) => `
+        <button onclick="DriveSync.browseDay(${offset})" style="
+            padding:3px 9px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;
+            border:1px solid ${active ? '#1D9E75' : 'rgba(15,23,42,0.12)'};
+            background:${active ? '#1D9E75' : 'transparent'};
+            color:${active ? '#fff' : '#5C6F63'};white-space:nowrap;">${label}</button>`;
+
     const header = `
-        <div style="display:flex;align-items:center;justify-content:space-between;
-                    padding:8px 12px;background:rgba(0,172,71,0.06);
-                    border-bottom:1px solid rgba(15,23,42,0.08);">
-            <span style="font-size:11px;font-weight:700;color:#0F6E56;text-transform:uppercase;letter-spacing:.05em;">
-                📁 Archivos del día (${_state.knownFiles.length})
-            </span>
-            <button onclick="DriveSync.togglePanel()" style="
-                background:transparent;border:none;cursor:pointer;
-                color:#5C6F63;font-size:16px;line-height:1;padding:0 2px;">×</button>
+        <div style="display:flex;flex-direction:column;gap:0;
+                    background:rgba(0,172,71,0.06);border-bottom:1px solid rgba(15,23,42,0.08);">
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;">
+                <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
+                    <span style="font-size:11px;font-weight:700;color:#0F6E56;text-transform:uppercase;letter-spacing:.05em;">
+                        📁 ${dayLabel}
+                    </span>
+                    <span style="font-size:10px;color:#5C6F63;">${mesLabel}</span>
+                    ${totalCount > 0 ? `<span style="font-size:10px;background:rgba(0,172,71,0.12);color:#0B7A3D;
+                                 padding:2px 8px;border-radius:999px;font-weight:600;">
+                        ${processedCount}/${totalCount} procesados
+                    </span>` : ''}
+                </div>
+                <button onclick="DriveSync.togglePanel()" style="
+                    background:transparent;border:none;cursor:pointer;
+                    color:#5C6F63;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">×</button>
+            </div>
+            <div style="display:flex;gap:5px;padding:0 12px 8px;">
+                ${navBtn('← Ayer', -1, false)}
+                ${navBtn('Hoy', 0, isToday)}
+                ${navBtn('Mañana →', 1, isTomorrow)}
+            </div>
         </div>`;
 
-    const rows = _state.knownFiles.length === 0
-        ? `<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">Sin archivos en la carpeta del día.</div>`
-        : _state.knownFiles.map(f => `
+    const rows = files.length === 0
+        ? `<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">Sin archivos en esta carpeta.</div>`
+        : files.map(f => {
+            const proc = _getProcessedInfo(f.id, f.name);
+            const done = Boolean(proc);
+            const timeStr = proc ? _timeStr(proc.processedAt) : '';
+            return `
             <div style="display:flex;flex-direction:column;gap:6px;
-                        padding:9px 12px;border-bottom:1px solid rgba(15,23,42,0.06);">
+                        padding:9px 12px;border-bottom:1px solid rgba(15,23,42,0.06);
+                        background:${done ? 'rgba(0,172,71,0.04)' : 'transparent'};">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-                    <span style="font-size:12px;font-weight:600;color:#17301F;
-                                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;"
-                          title="${f.name}">📄 ${f.name}</span>
-                    <span style="font-size:10px;color:#5C6F63;flex-shrink:0;">${f.folder || 'Drive'}</span>
+                    <span style="font-size:12px;font-weight:600;
+                                 color:${done ? '#0B7A3D' : '#17301F'};
+                                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px;"
+                          title="${f.name}">
+                        ${done ? '✅' : '📄'} ${f.name}
+                    </span>
+                    <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
+                        ${done ? `<span style="font-size:10px;background:#e8f5e9;color:#2e7d32;
+                                              border-radius:4px;padding:2px 7px;font-weight:600;">
+                                    ✓ ${proc.picker} · ${timeStr}
+                                  </span>` : `<span style="font-size:10px;color:#5C6F63;">${f.folder || 'Drive'}</span>`}
+                    </div>
                 </div>
+                ${done ? '' : `
                 <div style="display:flex;gap:5px;align-items:center;">
                     <select id="ep-picker-${f.id}" style="
                         flex:1;padding:4px 7px;border:1px solid rgba(15,23,42,0.12);
@@ -227,8 +315,9 @@ function _renderExistingPanel() {
                         padding:4px 11px;background:#00ac47;color:#fff;border:none;
                         border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;
                         white-space:nowrap;">Procesar</button>
-                </div>
-            </div>`).join('');
+                </div>`}
+            </div>`;
+        }).join('');
 
     panel.innerHTML = header + `<div style="max-height:260px;overflow-y:auto;">${rows}</div>`;
     panel.style.display = _state.panelOpen ? 'block' : 'none';
@@ -324,8 +413,8 @@ async function _getAllTxtRecursive(folderId, folderName = '') {
     return results;
 }
 
-async function _getDayFolderId() {
-    const mes = _getMes(); const dia = _getDia();
+async function _getDayFolderId(date = new Date()) {
+    const mes = _getMes(date); const dia = _getDia(date);
     const meses = await _searchFolder(mes, DRIVE_CONFIG.ROOT_FOLDER_ID);
     const mesCarpeta = meses[0] || (await _searchFolder(mes))[0];
     if (!mesCarpeta) { _setStatus(`⚠ No encontré "${mes}"`); return null; }
@@ -411,7 +500,7 @@ async function _handleNewFile(file) {
     }
 
     if (_state.mode === 'auto') {
-        await _processFile({ name: file.name, text, bulkCount, folder: file.folder || 'Drive', picker: DRIVE_CONFIG.DEFAULT_PICKER });
+        await _processFile({ id: file.id, name: file.name, text, bulkCount, folder: file.folder || 'Drive', picker: DRIVE_CONFIG.DEFAULT_PICKER });
     } else {
         _state.pending.push({ id: file.id, name: file.name, folder: file.folder || 'Drive', detectedAt: new Date(), bulkCount, text });
         _setToast(`Pendiente: "${file.name}"`);
@@ -419,7 +508,7 @@ async function _handleNewFile(file) {
     }
 }
 
-async function _processFile({ name, text, bulkCount, folder, picker }) {
+async function _processFile({ id = null, name, text, bulkCount, folder, picker }) {
     // 1. Setear picker en el <select> del app
     const pickerInput = document.getElementById('picker');
     if (pickerInput) {
@@ -444,8 +533,9 @@ async function _processFile({ name, text, bulkCount, folder, picker }) {
     }
 
     // 3. Registrar como procesado en el panel Drive
-    _state.processed.push({ name, folder, picker, bulkCount, processedAt: new Date() });
+    _state.processed.push({ id, name, folder, picker, bulkCount, processedAt: new Date() });
     _renderProcessed();
+    _renderExistingPanel(); /* actualizar panel para marcar como procesado */
     _setToast(`✓ Procesado: "${name}" → ${picker}`);
     // 4. Sincronizar con historial guardado
     _highlightNewestHistorialItem();
@@ -468,7 +558,7 @@ const DriveSync = {
         const picker = sel?.value || DRIVE_CONFIG.DEFAULT_PICKER;
         const btn    = document.querySelector(`button[onclick="DriveSync.processItem('${id}')"]`);
         if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
-        await _processFile({ name: item.name, text: item.text, bulkCount: item.bulkCount, folder: item.folder, picker });
+        await _processFile({ id: item.id, name: item.name, text: item.text, bulkCount: item.bulkCount, folder: item.folder, picker });
         _state.pending.splice(idx, 1);
         _renderPending();
     },
@@ -494,11 +584,32 @@ const DriveSync = {
 
     togglePanel() {
         _state.panelOpen = !_state.panelOpen;
+        if (_state.panelOpen && _state.browseFiles === null) {
+            /* primera apertura: usar knownFiles del día actual */
+            _state.browseDate = new Date();
+        }
         _renderExistingPanel();
     },
 
+    browseDay(offset) {
+        const base = new Date();
+        base.setDate(base.getDate() + offset);
+        _state.browseDate = base;
+        if (offset === 0) {
+            /* volver a hoy: usar los archivos ya cargados por el monitor */
+            _state.browseFiles = null;
+            _renderExistingPanel();
+        } else {
+            /* otro día: cargar desde Drive */
+            _state.browseFiles = [];
+            _renderExistingPanel();
+            _loadBrowseFiles();
+        }
+    },
+
     async processExisting(fileId) {
-        const file = _state.knownFiles.find(f => f.id === fileId);
+        const allFiles = _state.browseFiles !== null ? _state.browseFiles : _state.knownFiles;
+        const file = allFiles.find(f => f.id === fileId);
         if (!file) return;
         const sel    = document.getElementById('ep-picker-' + fileId);
         const picker = sel?.value || DRIVE_CONFIG.DEFAULT_PICKER;
@@ -507,7 +618,7 @@ const DriveSync = {
         try {
             const text = await _downloadText(fileId);
             const bulkCount = _countBulks(text);
-            await _processFile({ name: file.name, text, bulkCount, folder: file.folder || 'Drive', picker });
+            await _processFile({ id: file.id, name: file.name, text, bulkCount, folder: file.folder || 'Drive', picker });
             if (btn) { btn.textContent = '✓ Listo'; btn.style.background = '#e8f5e9'; btn.style.color = '#2e7d32'; }
         } catch(e) {
             if (btn) { btn.disabled = false; btn.textContent = 'Procesar'; }
