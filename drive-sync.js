@@ -175,21 +175,15 @@ function _renderProcessed() {
 
 
 async function _loadBrowseFiles() {
-    const panel = document.getElementById('drive-existing-panel');
-    if (panel) {
-        const listEl = panel.querySelector('[data-browse-list]');
-        if (listEl) listEl.innerHTML = '<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">Cargando...</div>';
-    }
+    /* Mostrar Cargando... en el listado del panel */
+    _state.browseFiles = 'loading';
+    _renderExistingPanel();
     try {
-        const dayId = await _getDayFolderId(_state.browseDate);
+        /* silent=true para no pisar el status del monitor activo */
+        const dayId = await _getDayFolderId(_state.browseDate, true);
         if (!dayId) {
-            if (panel) {
-                const listEl = panel.querySelector('[data-browse-list]');
-                const label = _getDia(_state.browseDate);
-                if (listEl) listEl.innerHTML = `<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">No se encontró la carpeta "${label}".</div>`;
-            }
             _state.browseFiles = [];
-            _updatePanelHeader();
+            _renderExistingPanel();
             return;
         }
         const files = await _getAllTxtRecursive(dayId);
@@ -224,6 +218,13 @@ function _renderExistingPanel() {
             'overflow:hidden',
             'background:rgba(255,255,255,0.96)',
         ].join(';');
+        /* inyectar keyframe para el spinner si no existe */
+        if (!document.getElementById('ds-spin-style')) {
+            const s = document.createElement('style');
+            s.id = 'ds-spin-style';
+            s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
+            document.head.appendChild(s);
+        }
         const syncPanel = document.getElementById('drive-sync-panel');
         if (syncPanel) syncPanel.appendChild(panel);
     }
@@ -235,7 +236,8 @@ function _renderExistingPanel() {
         const tom = new Date(today); tom.setDate(today.getDate() + 1);
         return _getDia(_state.browseDate) === _getDia(tom);
     })();
-    const files = (_state.browseFiles !== null) ? _state.browseFiles : _state.knownFiles;
+    const isLoading = _state.browseFiles === 'loading';
+    const files = (isLoading || _state.browseFiles === null) ? _state.knownFiles : _state.browseFiles;
 
     const pickerSel = document.getElementById('picker');
     const opts = pickerSel
@@ -282,7 +284,18 @@ function _renderExistingPanel() {
             </div>
         </div>`;
 
-    const rows = files.length === 0
+    const rows = isLoading
+        ? `<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">
+               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
+                    stroke="#1D9E75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                    style="animation:spin 1s linear infinite;vertical-align:middle;margin-right:5px">
+                   <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
+                   <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
+                   <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
+                   <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
+               </svg>Cargando archivos...
+           </div>`
+        : files.length === 0
         ? `<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">Sin archivos en esta carpeta.</div>`
         : files.map(f => {
             const proc = _getProcessedInfo(f.id, f.name);
@@ -413,13 +426,13 @@ async function _getAllTxtRecursive(folderId, folderName = '') {
     return results;
 }
 
-async function _getDayFolderId(date = new Date()) {
+async function _getDayFolderId(date = new Date(), silent = false) {
     const mes = _getMes(date); const dia = _getDia(date);
     const meses = await _searchFolder(mes, DRIVE_CONFIG.ROOT_FOLDER_ID);
     const mesCarpeta = meses[0] || (await _searchFolder(mes))[0];
-    if (!mesCarpeta) { _setStatus(`⚠ No encontré "${mes}"`); return null; }
+    if (!mesCarpeta) { if (!silent) _setStatus(`⚠ No encontré "${mes}"`); return null; }
     const dias = await _searchFolder(dia, mesCarpeta.id);
-    if (!dias[0]) { _setStatus(`Esperando carpeta "${dia}"...`, true); return null; }
+    if (!dias[0]) { if (!silent) _setStatus(`Esperando carpeta "${dia}"...`, true); return null; }
     return dias[0].id;
 }
 
@@ -478,9 +491,13 @@ async function _scan(firstScan) {
         const newFiles = files.filter(f => !_state.knownIds.has(f.id));
         for (const file of newFiles) {
             _state.knownIds.add(file.id);
+            _state.knownFiles.push(file);   /* FIX 3: mantener knownFiles actualizado */
             await _handleNewFile(file);
         }
-        if (newFiles.length > 0) _setFileCount(files.length);
+        if (newFiles.length > 0) {
+            _setFileCount(_state.knownFiles.length);
+            _renderExistingPanel();         /* refrescar panel con nuevos archivos */
+        }
     } catch(err) {
         console.error('[DriveSync]', err);
         if (err.status === 401) { _state.isAuthorized = false; _stopPolling(); _setStatus('Sesión expirada'); }
@@ -608,20 +625,28 @@ const DriveSync = {
     },
 
     async processExisting(fileId) {
-        const allFiles = _state.browseFiles !== null ? _state.browseFiles : _state.knownFiles;
+        const allFiles = (_state.browseFiles !== null && _state.browseFiles !== 'loading')
+            ? _state.browseFiles : _state.knownFiles;
         const file = allFiles.find(f => f.id === fileId);
         if (!file) return;
         const sel    = document.getElementById('ep-picker-' + fileId);
         const picker = sel?.value || DRIVE_CONFIG.DEFAULT_PICKER;
-        const btn    = document.querySelector(`button[onclick="DriveSync.processExisting('${fileId}')"]`);
+
+        /* Marcar el botón como procesando ANTES de await (la ref es válida aquí) */
+        const btn = document.querySelector(`button[onclick="DriveSync.processExisting('${fileId}')"]`);
         if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
+
         try {
             const text = await _downloadText(fileId);
             const bulkCount = _countBulks(text);
+            /* _processFile llama _renderExistingPanel internamente (reconstruye DOM)
+               por eso la ref btn queda stale — no usar btn después de esta línea */
             await _processFile({ id: file.id, name: file.name, text, bulkCount, folder: file.folder || 'Drive', picker });
-            if (btn) { btn.textContent = '✓ Listo'; btn.style.background = '#e8f5e9'; btn.style.color = '#2e7d32'; }
+            /* El panel ya se re-renderizó con ✅ por _processFile, no hace falta más */
         } catch(e) {
-            if (btn) { btn.disabled = false; btn.textContent = 'Procesar'; }
+            /* Botón puede estar stale si el error ocurre tarde — buscar de nuevo */
+            const btnRetry = document.querySelector(`button[onclick="DriveSync.processExisting('${fileId}')"]`);
+            if (btnRetry) { btnRetry.disabled = false; btnRetry.textContent = 'Procesar'; }
             _setToast('Error al procesar: ' + file.name, false);
         }
     },
