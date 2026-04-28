@@ -363,37 +363,92 @@ function _loadScript(src) {
 }
 
 async function _loadAll() {
-    await _loadScript('https://accounts.google.com/gsi/client');
-    await _loadScript('https://apis.google.com/js/api.js');
-    const apiKey = localStorage.getItem('drive_api_key');
-    await new Promise((res, rej) =>
-        gapi.load('client', {
-            callback: () => gapi.client.init({
-                apiKey,
-                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-            }).then(res).catch(rej),
-            onerror: rej
-        })
+    const timeout = (ms) => new Promise((_, rej) =>
+        setTimeout(() => rej(new Error(`Timeout después de ${ms/1000}s — revisá tu conexión`)), ms)
     );
+
+    await Promise.race([_loadScript('https://accounts.google.com/gsi/client'), timeout(10000)]);
+    await Promise.race([_loadScript('https://apis.google.com/js/api.js'), timeout(10000)]);
+
+    const apiKey = localStorage.getItem('drive_api_key');
+    await Promise.race([
+        new Promise((res, rej) =>
+            gapi.load('client', {
+                callback: () => gapi.client.init({
+                    apiKey,
+                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+                }).then(res).catch(rej),
+                onerror: (e) => rej(new Error('gapi.load falló: ' + (e?.message || e)))
+            })
+        ),
+        timeout(15000)
+    ]);
 }
 
 async function _authorize() {
     const apiKey = _getApiKey();
-    if (!apiKey) { _setStatus('Cancelado'); return; }
+    if (!apiKey) {
+        _setStatus('Cancelado — sin API Key');
+        _resetConnectBtn();
+        return;
+    }
+
     _setStatus('Cargando SDK...');
-    try { await _loadAll(); } catch(e) { _setStatus('Error: ' + e.message); return; }
+    try {
+        await _loadAll();
+    } catch(e) {
+        _setStatus('❌ Error SDK: ' + e.message);
+        _setToast('No se pudo cargar el SDK de Google. Revisa tu conexión.', false);
+        _resetConnectBtn();
+        return;
+    }
+
+    /* Verificar que la key funciona antes de pedir OAuth */
+    try {
+        await gapi.client.drive.files.list({ pageSize: 1, fields: 'files(id)', supportsAllDrives: true });
+    } catch(e) {
+        if (e.status === 400 || e.status === 403) {
+            _setStatus('❌ API Key inválida');
+            _setToast('La API Key no es válida o fue revocada. Bórrala y reconecta.', false);
+            /* Ofrecer borrar la key para que el próximo intento la pida de nuevo */
+            if (confirm('La API Key guardada no funciona.\n¿Querés ingresarla de nuevo?')) {
+                localStorage.removeItem('drive_api_key');
+            }
+            _resetConnectBtn();
+            return;
+        }
+        /* Error 401 = sin token aún, es normal — continuar con OAuth */
+    }
+
     _state.tokenClient = google.accounts.oauth2.initTokenClient({
         client_id: DRIVE_CONFIG.CLIENT_ID,
         scope:     DRIVE_CONFIG.SCOPES,
         callback:  (r) => {
-            if (r.error) { _setStatus('Error OAuth: ' + r.error); return; }
+            if (r.error) {
+                _setStatus('❌ Error OAuth: ' + r.error);
+                _setToast('Error de autorización: ' + r.error, false);
+                _resetConnectBtn();
+                return;
+            }
             _state.isAuthorized = true;
             _startPolling();
         },
-        error_callback: (e) => _setStatus('Error: ' + (e.message || e.type)),
+        error_callback: (e) => {
+            _setStatus('❌ ' + (e.message || e.type || 'Error desconocido'));
+            _setToast('Error al conectar con Google: ' + (e.message || e.type), false);
+            _resetConnectBtn();
+        },
     });
+
     _setStatus('Abriendo Google...');
-    _state.tokenClient.requestAccessToken({ prompt: 'consent' });
+    _state.tokenClient.requestAccessToken({ prompt: '' });
+}
+
+function _resetConnectBtn() {
+    const btn  = document.getElementById('drive-sync-btn');
+    const stop = document.getElementById('drive-sync-stop');
+    if (btn)  { btn.disabled = false; btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Conectar Drive'; }
+    if (stop) stop.style.display = 'none';
 }
 
 async function _searchFolder(name, parentId = null) {
@@ -591,8 +646,11 @@ const DriveSync = {
         if (_state.isAuthorized) {
             _startPolling();
         } else {
-            _authorize().catch(() => {}).finally(() => {
-                if (btn) { btn.disabled = false; }
+            _authorize().catch((e) => {
+                console.error('[DriveSync connect]', e);
+                _setStatus('❌ Error inesperado');
+                _setToast('Error inesperado al conectar. Revisá la consola.', false);
+                _resetConnectBtn();
             });
         }
     },
