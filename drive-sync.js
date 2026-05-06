@@ -2,6 +2,10 @@
  * drive-sync.js
  * Monitorea Google Drive (Shared Drive) y procesa archivos .txt de etiquetas ML.
  * Modos: Automático (kmendoza) | Manual (usuario elige y procesa)
+ *
+ * ACTUALIZACIÓN: Ahora detecta carpetas con ambos formatos de fecha
+ * - "4 MAYO" (sin padding)
+ * - "04 MAYO" (con padding de ceros)
  */
 
 const DRIVE_CONFIG = {
@@ -19,9 +23,33 @@ const MESES = ['ENERO','FEBRERO','MARZO','ABRIL','MAYO','JUNIO',
 function _getApiKey() {
     const saved = localStorage.getItem('drive_api_key');
     if (saved) return saved;
-    const entered = prompt('Ingresá tu Google API Key:\n(Se guardará para no pedirla de nuevo)');
-    if (entered?.trim()) { localStorage.setItem('drive_api_key', entered.trim()); return entered.trim(); }
+    // Mostrar input en el status en vez de prompt() (que puede ser bloqueado)
     return null;
+}
+
+function _restoreConnectBtn() {
+    const btn = document.getElementById('drive-sync-btn');
+    if (!btn) return;
+    btn.disabled = false;
+    const hasKey = !!localStorage.getItem('drive_api_key');
+    btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> ${hasKey ? 'Reconectar Drive' : 'Conectar Drive'}`;
+}
+
+// Cargar procesados del día desde localStorage (se limpia automáticamente al cambiar de día)
+function _todayKey() {
+    const d = new Date();
+    return `drive_processed_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;
+}
+function _loadProcessedIds() {
+    try {
+        const saved = localStorage.getItem(_todayKey());
+        return saved ? new Set(JSON.parse(saved)) : new Set();
+    } catch(e) { return new Set(); }
+}
+function _saveProcessedIds() {
+    try {
+        localStorage.setItem(_todayKey(), JSON.stringify([..._state.processedIds]));
+    } catch(e) {}
 }
 
 const _state = {
@@ -30,13 +58,14 @@ const _state = {
     isAuthorized: false,
     pollTimer:    null,
     knownIds:     new Set(),
+    knownNames:   new Set(),   // "carpeta|nombre" — evita re-procesar mismo archivo con distinto casing
     knownFiles:   [],
     pending:      [],
     processed:    [],
+    processedIds: _loadProcessedIds(), // IDs ya procesados para marcar en panel
     tokenClient:  null,
     panelOpen:    false,
-    browseDate:   new Date(),  /* fecha del panel de exploración */
-    browseFiles:  null,          /* null = usa knownFiles del día actual */
+    offsetDay:    0,  // 0 = hoy, -1 = ayer, +1 = mañana
 };
 
 function _getMes(d = new Date()) { return `${MESES[d.getMonth()]} ${d.getFullYear()}`; }
@@ -56,7 +85,7 @@ function _setFileCount(n) {
     if (!el) return;
     if (n === null || n === undefined) { el.style.display = 'none'; return; }
     el.style.display = '';
-    el.textContent = '\uD83D\uDCC1 ' + n + ' archivo' + (n !== 1 ? 's' : '');
+    el.textContent = '📁 ' + n + ' archivo' + (n !== 1 ? 's' : '');
     el.style.color = n > 0 ? 'var(--text)' : 'var(--text-muted)';
     el.style.cursor = 'pointer';
     el.title = 'Ver archivos del día';
@@ -173,38 +202,6 @@ function _renderProcessed() {
 }
 
 
-
-async function _loadBrowseFiles() {
-    /* Mostrar Cargando... en el listado del panel */
-    _state.browseFiles = 'loading';
-    _renderExistingPanel();
-    try {
-        /* silent=true para no pisar el status del monitor activo */
-        const dayId = await _getDayFolderId(_state.browseDate, true);
-        if (!dayId) {
-            _state.browseFiles = [];
-            _renderExistingPanel();
-            return;
-        }
-        const files = await _getAllTxtRecursive(dayId);
-        _state.browseFiles = files;
-    } catch(e) {
-        _state.browseFiles = [];
-        console.error('[DriveSync browse]', e);
-    }
-    _renderExistingPanel();
-}
-
-function _isProcessed(fileId, fileName) {
-    return _state.processed.some(p => (p.id && p.id === fileId) || p.name === fileName);
-}
-
-function _getProcessedInfo(fileId, fileName) {
-    return _state.processed.find(p => (p.id && p.id === fileId) || p.name === fileName);
-}
-
-function _updatePanelHeader() { _renderExistingPanel(); }
-
 function _renderExistingPanel() {
     let panel = document.getElementById('drive-existing-panel');
     if (!panel) {
@@ -218,26 +215,9 @@ function _renderExistingPanel() {
             'overflow:hidden',
             'background:rgba(255,255,255,0.96)',
         ].join(';');
-        /* inyectar keyframe para el spinner si no existe */
-        if (!document.getElementById('ds-spin-style')) {
-            const s = document.createElement('style');
-            s.id = 'ds-spin-style';
-            s.textContent = '@keyframes spin{to{transform:rotate(360deg)}}';
-            document.head.appendChild(s);
-        }
         const syncPanel = document.getElementById('drive-sync-panel');
         if (syncPanel) syncPanel.appendChild(panel);
     }
-
-    /* Determinar qué archivos mostrar */
-    const today = new Date();
-    const isToday = _getDia(_state.browseDate) === _getDia(today);
-    const isTomorrow = (() => {
-        const tom = new Date(today); tom.setDate(today.getDate() + 1);
-        return _getDia(_state.browseDate) === _getDia(tom);
-    })();
-    const isLoading = _state.browseFiles === 'loading';
-    const files = (isLoading || _state.browseFiles === null) ? _state.knownFiles : _state.browseFiles;
 
     const pickerSel = document.getElementById('picker');
     const opts = pickerSel
@@ -247,88 +227,64 @@ function _renderExistingPanel() {
         `<option value="${o.v}" ${o.v === DRIVE_CONFIG.DEFAULT_PICKER ? 'selected' : ''}>${o.l}</option>`
     ).join('');
 
-    const processedCount = files.filter(f => _isProcessed(f.id, f.name)).length;
-    const totalCount = files.length;
-    const dayLabel = _getDia(_state.browseDate);
-    const mesLabel = _getMes(_state.browseDate);
-
-    const navBtn = (label, offset, active) => `
-        <button onclick="DriveSync.browseDay(${offset})" style="
-            padding:3px 9px;border-radius:6px;font-size:10px;font-weight:600;cursor:pointer;
-            border:1px solid ${active ? '#1D9E75' : 'rgba(15,23,42,0.12)'};
-            background:${active ? '#1D9E75' : 'transparent'};
-            color:${active ? '#fff' : '#5C6F63'};white-space:nowrap;">${label}</button>`;
+    const offsetD = new Date();
+    offsetD.setDate(offsetD.getDate() + _state.offsetDay);
+    const diaStr  = _getDia(offsetD);
+    const dayLabel = _state.offsetDay === 0  ? `HOY · ${diaStr}`
+        : _state.offsetDay === -1 ? `AYER · ${diaStr}`
+        : _state.offsetDay ===  1 ? `MAÑANA · ${diaStr}`
+        : diaStr;
 
     const header = `
-        <div style="display:flex;flex-direction:column;gap:0;
-                    background:rgba(0,172,71,0.06);border-bottom:1px solid rgba(15,23,42,0.08);">
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;">
-                <div style="display:flex;align-items:center;gap:7px;flex-wrap:wrap;">
-                    <span style="font-size:11px;font-weight:700;color:#0F6E56;text-transform:uppercase;letter-spacing:.05em;">
-                        📁 ${dayLabel}
-                    </span>
-                    <span style="font-size:10px;color:#5C6F63;">${mesLabel}</span>
-                    ${totalCount > 0 ? `<span style="font-size:10px;background:rgba(0,172,71,0.12);color:#0B7A3D;
-                                 padding:2px 8px;border-radius:999px;font-weight:600;">
-                        ${processedCount}/${totalCount} procesados
-                    </span>` : ''}
-                </div>
-                <button onclick="DriveSync.togglePanel()" style="
-                    background:transparent;border:none;cursor:pointer;
-                    color:#5C6F63;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">×</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;
+                    padding:8px 12px;background:rgba(0,172,71,0.06);
+                    border-bottom:1px solid rgba(15,23,42,0.08);">
+            <div style="display:flex;align-items:center;gap:6px;">
+                <button onclick="DriveSync.changeDay(-1)" style="
+                    background:transparent;border:1px solid rgba(15,23,42,0.12);
+                    border-radius:4px;cursor:pointer;font-size:13px;
+                    padding:1px 6px;color:#0F6E56;line-height:1.4;">◀</button>
+                <span style="font-size:11px;font-weight:700;color:#0F6E56;text-transform:uppercase;letter-spacing:.05em;">
+                    📁 ${dayLabel} — ${_state.knownFiles.length} archivo${_state.knownFiles.length !== 1 ? 's' : ''}
+                </span>
+                <button onclick="DriveSync.changeDay(1)" style="
+                    background:transparent;border:1px solid rgba(15,23,42,0.12);
+                    border-radius:4px;cursor:pointer;font-size:13px;
+                    padding:1px 6px;color:#0F6E56;line-height:1.4;">▶</button>
             </div>
-            <div style="display:flex;gap:5px;padding:0 12px 8px;">
-                ${navBtn('← Ayer', -1, false)}
-                ${navBtn('Hoy', 0, isToday)}
-                ${navBtn('Mañana →', 1, isTomorrow)}
-            </div>
+            <button onclick="DriveSync.togglePanel()" style="
+                background:transparent;border:none;cursor:pointer;
+                color:#5C6F63;font-size:16px;line-height:1;padding:0 2px;">×</button>
         </div>`;
 
-    const rows = isLoading
-        ? `<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">
-               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none"
-                    stroke="#1D9E75" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
-                    style="animation:spin 1s linear infinite;vertical-align:middle;margin-right:5px">
-                   <line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/>
-                   <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"/><line x1="16.24" y1="16.24" x2="19.07" y2="19.07"/>
-                   <line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/>
-                   <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"/><line x1="16.24" y1="7.76" x2="19.07" y2="4.93"/>
-               </svg>Cargando archivos...
-           </div>`
-        : files.length === 0
+    const rows = _state.knownFiles.length === 0
         ? `<div style="padding:14px;text-align:center;color:#5C6F63;font-size:12px;">Sin archivos en esta carpeta.</div>`
-        : files.map(f => {
-            const proc = _getProcessedInfo(f.id, f.name);
-            const done = Boolean(proc);
-            const timeStr = proc ? _timeStr(proc.processedAt) : '';
+        : _state.knownFiles.map(f => {
+            const isDone = _state.processedIds.has(f.id);
             return `
             <div style="display:flex;flex-direction:column;gap:6px;
                         padding:9px 12px;border-bottom:1px solid rgba(15,23,42,0.06);
-                        background:${done ? 'rgba(0,172,71,0.04)' : 'transparent'};">
+                        ${isDone ? 'background:rgba(0,172,71,0.04);' : ''}">
                 <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;">
-                    <span style="font-size:12px;font-weight:600;
-                                 color:${done ? '#0B7A3D' : '#17301F'};
-                                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:150px;"
-                          title="${f.name}">
-                        ${done ? '✅' : '📄'} ${f.name}
-                    </span>
-                    <div style="display:flex;align-items:center;gap:5px;flex-shrink:0;">
-                        ${done ? `<span style="font-size:10px;background:#e8f5e9;color:#2e7d32;
-                                              border-radius:4px;padding:2px 7px;font-weight:600;">
-                                    ✓ ${proc.picker} · ${timeStr}
-                                  </span>` : `<span style="font-size:10px;color:#5C6F63;">${f.folder || 'Drive'}</span>`}
-                    </div>
+                    <span style="font-size:12px;font-weight:600;color:#17301F;
+                                 overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px;"
+                          title="${f.name}">📄 ${f.name}</span>
+                    <span style="font-size:10px;color:#5C6F63;flex-shrink:0;">${f.folder || 'Drive'}</span>
                 </div>
-                ${done ? '' : `
                 <div style="display:flex;gap:5px;align-items:center;">
-                    <select id="ep-picker-${f.id}" style="
-                        flex:1;padding:4px 7px;border:1px solid rgba(15,23,42,0.12);
-                        border-radius:6px;font-size:11px;background:#fff;color:#17301F;">${optHtml}</select>
-                    <button onclick="DriveSync.processExisting('${f.id}')" style="
-                        padding:4px 11px;background:#00ac47;color:#fff;border:none;
-                        border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;
-                        white-space:nowrap;">Procesar</button>
-                </div>`}
+                    ${isDone
+                        ? `<span style="flex:1;padding:4px 10px;background:#e8f5e9;color:#2e7d32;
+                                        border-radius:6px;font-size:11px;font-weight:600;text-align:center;">
+                                ✅ Procesado</span>`
+                        : `<select id="ep-picker-${f.id}" style="
+                                flex:1;padding:4px 7px;border:1px solid rgba(15,23,42,0.12);
+                                border-radius:6px;font-size:11px;background:#fff;color:#17301F;">${optHtml}</select>
+                            <button onclick="DriveSync.processExisting('${f.id}')" style="
+                                padding:4px 11px;background:#00ac47;color:#fff;border:none;
+                                border-radius:6px;font-size:11px;font-weight:600;cursor:pointer;
+                                white-space:nowrap;">Procesar</button>`
+                    }
+                </div>
             </div>`;
         }).join('');
 
@@ -362,93 +318,72 @@ function _loadScript(src) {
     });
 }
 
+let _gapiReady = false;
 async function _loadAll() {
-    const timeout = (ms) => new Promise((_, rej) =>
-        setTimeout(() => rej(new Error(`Timeout después de ${ms/1000}s — revisá tu conexión`)), ms)
-    );
-
-    await Promise.race([_loadScript('https://accounts.google.com/gsi/client'), timeout(10000)]);
-    await Promise.race([_loadScript('https://apis.google.com/js/api.js'), timeout(10000)]);
-
+    await _loadScript('https://accounts.google.com/gsi/client');
+    await _loadScript('https://apis.google.com/js/api.js');
+    if (_gapiReady) return; // ya inicializado, no re-inicializar
     const apiKey = localStorage.getItem('drive_api_key');
-    await Promise.race([
-        new Promise((res, rej) =>
-            gapi.load('client', {
-                callback: () => gapi.client.init({
-                    apiKey,
-                    discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
-                }).then(res).catch(rej),
-                onerror: (e) => rej(new Error('gapi.load falló: ' + (e?.message || e)))
-            })
-        ),
-        timeout(15000)
-    ]);
+    await new Promise((res, rej) =>
+        gapi.load('client', {
+            callback: () => gapi.client.init({
+                apiKey: apiKey || undefined,
+                discoveryDocs: ['https://www.googleapis.com/discovery/v1/apis/drive/v3/rest']
+            }).then(() => { _gapiReady = true; res(); }).catch(rej),
+            onerror: (e) => rej(new Error('gapi.load falló: ' + (e?.message || e)))
+        })
+    );
 }
 
 async function _authorize() {
-    const apiKey = _getApiKey();
-    if (!apiKey) {
-        _setStatus('Cancelado — sin API Key');
-        _resetConnectBtn();
-        return;
-    }
-
-    _setStatus('Cargando SDK...');
+    _setStatus('⏳ Cargando SDK de Google...');
     try {
         await _loadAll();
     } catch(e) {
+        console.error('[DriveSync] _loadAll falló:', e);
         _setStatus('❌ Error SDK: ' + e.message);
-        _setToast('No se pudo cargar el SDK de Google. Revisa tu conexión.', false);
-        _resetConnectBtn();
+        _restoreConnectBtn();
         return;
     }
 
-    /* Verificar que la key funciona antes de pedir OAuth */
+    _setStatus('⏳ Esperando autorización...');
+
     try {
-        await gapi.client.drive.files.list({ pageSize: 1, fields: 'files(id)', supportsAllDrives: true });
+        await new Promise((resolve, reject) => {
+            // Timeout: si en 2 min no hay respuesta, abortar
+            const timeout = setTimeout(() => {
+                reject(new Error('Tiempo de espera agotado. ¿Se bloqueó el popup de Google?'));
+            }, 120_000);
+
+            _state.tokenClient = google.accounts.oauth2.initTokenClient({
+                client_id: DRIVE_CONFIG.CLIENT_ID,
+                scope:     DRIVE_CONFIG.SCOPES,
+                callback: (r) => {
+                    clearTimeout(timeout);
+                    if (r.error) {
+                        reject(new Error('OAuth: ' + r.error));
+                    } else {
+                        _state.isAuthorized = true;
+                        resolve();
+                    }
+                },
+                error_callback: (e) => {
+                    clearTimeout(timeout);
+                    reject(new Error(e.message || e.type || 'error desconocido'));
+                },
+            });
+
+            _state.tokenClient.requestAccessToken({ prompt: 'consent' });
+        });
+
+        // Éxito
+        _startPolling();
+
     } catch(e) {
-        if (e.status === 400 || e.status === 403) {
-            _setStatus('❌ API Key inválida');
-            _setToast('La API Key no es válida o fue revocada. Bórrala y reconecta.', false);
-            /* Ofrecer borrar la key para que el próximo intento la pida de nuevo */
-            if (confirm('La API Key guardada no funciona.\n¿Querés ingresarla de nuevo?')) {
-                localStorage.removeItem('drive_api_key');
-            }
-            _resetConnectBtn();
-            return;
-        }
-        /* Error 401 = sin token aún, es normal — continuar con OAuth */
+        console.error('[DriveSync] OAuth falló:', e);
+        _setStatus('❌ ' + e.message + ' — Intentá de nuevo');
+        _restoreConnectBtn();
     }
-
-    _state.tokenClient = google.accounts.oauth2.initTokenClient({
-        client_id: DRIVE_CONFIG.CLIENT_ID,
-        scope:     DRIVE_CONFIG.SCOPES,
-        callback:  (r) => {
-            if (r.error) {
-                _setStatus('❌ Error OAuth: ' + r.error);
-                _setToast('Error de autorización: ' + r.error, false);
-                _resetConnectBtn();
-                return;
-            }
-            _state.isAuthorized = true;
-            _startPolling();
-        },
-        error_callback: (e) => {
-            _setStatus('❌ ' + (e.message || e.type || 'Error desconocido'));
-            _setToast('Error al conectar con Google: ' + (e.message || e.type), false);
-            _resetConnectBtn();
-        },
-    });
-
-    _setStatus('Abriendo Google...');
-    _state.tokenClient.requestAccessToken({ prompt: '' });
-}
-
-function _resetConnectBtn() {
-    const btn  = document.getElementById('drive-sync-btn');
-    const stop = document.getElementById('drive-sync-stop');
-    if (btn)  { btn.disabled = false; btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Conectar Drive'; }
-    if (stop) stop.style.display = 'none';
 }
 
 async function _searchFolder(name, parentId = null) {
@@ -461,33 +396,69 @@ async function _searchFolder(name, parentId = null) {
     return res.result.files || [];
 }
 
-async function _getAllTxtRecursive(folderId, folderName = '') {
+async function _getAllTxtRecursive(folderId, folderName = '', _seenIds = new Set()) {
     const results = [];
     const res = await gapi.client.drive.files.list({
         q: `'${folderId}' in parents and mimeType='text/plain' and trashed=false`,
-        fields: 'files(id,name)', pageSize: 100,
+        fields: 'files(id,name,createdTime)', pageSize: 100,
         supportsAllDrives: true, includeItemsFromAllDrives: true, corpora: 'allDrives',
     });
-    (res.result.files || []).forEach(f => results.push({ ...f, folder: folderName }));
+    for (const f of (res.result.files || [])) {
+        if (_seenIds.has(f.id)) continue;
+        _seenIds.add(f.id);
+        results.push({ ...f, folder: folderName });
+    }
     const subs = await gapi.client.drive.files.list({
         q: `'${folderId}' in parents and mimeType='application/vnd.google-apps.folder' and trashed=false`,
         fields: 'files(id,name)', pageSize: 100,
         supportsAllDrives: true, includeItemsFromAllDrives: true, corpora: 'allDrives',
     });
     for (const sub of (subs.result.files || [])) {
-        const nested = await _getAllTxtRecursive(sub.id, sub.name);
+        const nested = await _getAllTxtRecursive(sub.id, sub.name, _seenIds);
         results.push(...nested);
     }
     return results;
 }
 
-async function _getDayFolderId(date = new Date(), silent = false) {
-    const mes = _getMes(date); const dia = _getDia(date);
+function _nameKey(f) {
+    return `${(f.folder || '').toLowerCase().trim()}|${f.name.toLowerCase().trim()}`;
+}
+
+/**
+ * FUNCIÓN ACTUALIZADA: Detecta ambos formatos de carpeta por día
+ * - "4 MAYO" (sin padding)
+ * - "04 MAYO" (con padding de ceros)
+ */
+async function _getDayFolderId(offset = 0) {
+    const d = new Date();
+    d.setDate(d.getDate() + offset);
+    const mes = `${MESES[d.getMonth()]} ${d.getFullYear()}`; // "MAYO 2026"
+
+    // Generar ambos formatos de día
+    const diaPadded = `${String(d.getDate()).padStart(2, '0')} ${MESES[d.getMonth()]}`; // "04 MAYO"
+    const diaNormal = `${d.getDate()} ${MESES[d.getMonth()]}`; // "4 MAYO"
+
+    // Buscar carpeta de mes
     const meses = await _searchFolder(mes, DRIVE_CONFIG.ROOT_FOLDER_ID);
     const mesCarpeta = meses[0] || (await _searchFolder(mes))[0];
-    if (!mesCarpeta) { if (!silent) _setStatus(`⚠ No encontré "${mes}"`); return null; }
-    const dias = await _searchFolder(dia, mesCarpeta.id);
-    if (!dias[0]) { if (!silent) _setStatus(`Esperando carpeta "${dia}"...`, true); return null; }
+    if (!mesCarpeta) {
+        _setStatus(`⚠ Sin carpeta "${mes}"`);
+        return null;
+    }
+
+    // Intentar primero con padding (04 MAYO)
+    let dias = await _searchFolder(diaPadded, mesCarpeta.id);
+
+    // Si no encuentra, intentar sin padding (4 MAYO)
+    if (!dias[0]) {
+        dias = await _searchFolder(diaNormal, mesCarpeta.id);
+    }
+
+    if (!dias[0]) {
+        _setStatus(`Sin carpeta "${diaPadded}" o "${diaNormal}" en ${mes}`, true);
+        return null;
+    }
+
     return dias[0].id;
 }
 
@@ -510,9 +481,20 @@ function _countBulks(text) {
 async function _startPolling() {
     if (_state.isPolling) return;
     _state.isPolling = true;
+    _state.offsetDay = 0;
     localStorage.setItem('drive_was_active', 'true');
-    document.getElementById('drive-sync-btn').style.display = 'none';
-    document.getElementById('drive-sync-stop').style.display = '';
+
+    const bc = document.getElementById('drive-sync-btn');
+    const bs = document.getElementById('drive-sync-stop');
+    if (bc) bc.style.display = 'none';
+    if (bs) bs.style.display = '';
+
+    // Mostrar fila "Carpeta: 29 ABRIL  [Ver archivos]"
+    const dayStatus = document.getElementById('drive-day-status');
+    const dayName   = document.getElementById('drive-day-name');
+    if (dayName)   dayName.textContent = 'Carpeta: ' + _getDia();
+    if (dayStatus) dayStatus.style.display = 'flex';
+
     _setStatus('● Monitoreando en vivo', true);
     _applyMode();
     await _scan(true);
@@ -521,41 +503,65 @@ async function _startPolling() {
 
 function _stopPolling() {
     clearInterval(_state.pollTimer);
-    _state.pollTimer = null; _state.isPolling = false;
+    _state.pollTimer = null;
+    _state.isPolling = false;
     localStorage.setItem('drive_was_active', 'false');
-    _setStatus('Detenido');
+    _setStatus('Desconectado');
+
     const bc = document.getElementById('drive-sync-btn');
     const bs = document.getElementById('drive-sync-stop');
     if (bc) { bc.style.display = ''; bc.disabled = false; }
     if (bs) bs.style.display = 'none';
+
+    const dayStatus = document.getElementById('drive-day-status');
+    if (dayStatus) dayStatus.style.display = 'none';
+    _setFileCount(null);
+    _restoreConnectBtn();
 }
 
 async function _scan(firstScan) {
     try {
-        const dayId = await _getDayFolderId();
+        const dayId = await _getDayFolderId(0);
         if (!dayId) return;
         const files = await _getAllTxtRecursive(dayId);
+
         if (firstScan) {
-            files.forEach(f => _state.knownIds.add(f.id));
+            files.forEach(f => {
+                _state.knownIds.add(f.id);
+                _state.knownNames.add(_nameKey(f));
+            });
             _state.knownFiles = files;
             _setFileCount(files.length);
             _setStatus(`● Monitoreando — ${files.length} existentes`, true);
             _renderExistingPanel();
             return;
         }
-        const newFiles = files.filter(f => !_state.knownIds.has(f.id));
+
+        const newFiles = files.filter(f =>
+            !_state.knownIds.has(f.id) &&
+            !_state.knownNames.has(_nameKey(f))
+        );
         for (const file of newFiles) {
             _state.knownIds.add(file.id);
-            _state.knownFiles.push(file);   /* FIX 3: mantener knownFiles actualizado */
+            _state.knownNames.add(_nameKey(file));
             await _handleNewFile(file);
         }
         if (newFiles.length > 0) {
-            _setFileCount(_state.knownFiles.length);
-            _renderExistingPanel();         /* refrescar panel con nuevos archivos */
+            _state.knownFiles = files;
+            _setFileCount(files.length);
         }
+
     } catch(err) {
-        console.error('[DriveSync]', err);
-        if (err.status === 401) { _state.isAuthorized = false; _stopPolling(); _setStatus('Sesión expirada'); }
+        console.error('[DriveSync] _scan error:', err);
+        const code = err.status ?? err.code ?? err.result?.error?.code;
+        if (code === 401 || code === 403) {
+            _state.isAuthorized = false;
+            _gapiReady = false;
+            _stopPolling();
+            _setStatus('⚠️ Sesión expirada — clic en Reconectar');
+        } else {
+            _setStatus('⚠️ Error temporal, reintentando en 30s...');
+        }
     }
 }
 
@@ -572,7 +578,7 @@ async function _handleNewFile(file) {
     }
 
     if (_state.mode === 'auto') {
-        await _processFile({ id: file.id, name: file.name, text, bulkCount, folder: file.folder || 'Drive', picker: DRIVE_CONFIG.DEFAULT_PICKER });
+        await _processFile({ name: file.name, text, bulkCount, folder: file.folder || 'Drive', picker: DRIVE_CONFIG.DEFAULT_PICKER });
     } else {
         _state.pending.push({ id: file.id, name: file.name, folder: file.folder || 'Drive', detectedAt: new Date(), bulkCount, text });
         _setToast(`Pendiente: "${file.name}"`);
@@ -580,8 +586,7 @@ async function _handleNewFile(file) {
     }
 }
 
-async function _processFile({ id = null, name, text, bulkCount, folder, picker }) {
-    // 1. Setear picker en el <select> del app
+async function _processFile({ name, text, bulkCount, folder, picker }) {
     const pickerInput = document.getElementById('picker');
     if (pickerInput) {
         const target = Array.from(pickerInput.options)
@@ -594,22 +599,24 @@ async function _processFile({ id = null, name, text, bulkCount, folder, picker }
         }
     }
 
-    // 2. Pasar el archivo al App principal
     const blob = new Blob([text], { type: 'text/plain' });
     const f    = new File([blob], name, { type: 'text/plain' });
+    let realCount = bulkCount;
 
     if (window.App?.actions?.handleFiles) {
+        const prevLen = window.App.state?.storedDocuments?.length ?? -1;
         await window.App.actions.handleFiles([f]);
+        const docs = window.App.state?.storedDocuments;
+        if (Array.isArray(docs) && docs.length > prevLen && docs[0]?.rows?.length > 0) {
+            realCount = docs[0].rows.length;
+        }
     } else {
-        console.warn('[DriveSync] window.App no disponible. ¿Agregaste window.App = App en app.js?');
+        console.warn('[DriveSync] window.App no disponible.');
     }
 
-    // 3. Registrar como procesado en el panel Drive
-    _state.processed.push({ id, name, folder, picker, bulkCount, processedAt: new Date() });
+    _state.processed.push({ name, folder, picker, bulkCount: realCount, processedAt: new Date() });
     _renderProcessed();
-    _renderExistingPanel(); /* actualizar panel para marcar como procesado */
-    _setToast(`✓ Procesado: "${name}" → ${picker}`);
-    // 4. Sincronizar con historial guardado
+    _setToast(`✓ "${name}" — ${realCount} pedidos → ${picker}`);
     _highlightNewestHistorialItem();
 }
 
@@ -630,7 +637,7 @@ const DriveSync = {
         const picker = sel?.value || DRIVE_CONFIG.DEFAULT_PICKER;
         const btn    = document.querySelector(`button[onclick="DriveSync.processItem('${id}')"]`);
         if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
-        await _processFile({ id: item.id, name: item.name, text: item.text, bulkCount: item.bulkCount, folder: item.folder, picker });
+        await _processFile({ name: item.name, text: item.text, bulkCount: item.bulkCount, folder: item.folder, picker });
         _state.pending.splice(idx, 1);
         _renderPending();
     },
@@ -641,87 +648,94 @@ const DriveSync = {
     },
 
     connect() {
+        if (_state.isPolling) return; // ya conectado
         const btn = document.getElementById('drive-sync-btn');
-        if (btn) { btn.disabled = true; btn.textContent = 'Conectando...'; }
-        if (_state.isAuthorized) {
-            _startPolling();
-        } else {
-            _authorize().catch((e) => {
-                console.error('[DriveSync connect]', e);
-                _setStatus('❌ Error inesperado');
-                _setToast('Error inesperado al conectar. Revisá la consola.', false);
-                _resetConnectBtn();
-            });
+        if (btn) { btn.disabled = true; btn.textContent = '⏳ Conectando...'; }
+
+        const apiKey = localStorage.getItem('drive_api_key');
+        if (!apiKey) {
+            // Pedir API Key de forma visible (no prompt bloqueable)
+            const key = window.prompt('Ingresá tu Google API Key para Drive:');
+            if (!key?.trim()) {
+                _setStatus('Cancelado — se requiere API Key');
+                _restoreConnectBtn();
+                return;
+            }
+            localStorage.setItem('drive_api_key', key.trim());
+            _gapiReady = false; // forzar re-init con la nueva key
         }
+
+        _authorize().catch((e) => {
+            console.error('[DriveSync] connect error:', e);
+            _setStatus('❌ Error: ' + (e.message || e));
+            _restoreConnectBtn();
+        });
     },
 
     stop: _stopPolling,
 
     togglePanel() {
         _state.panelOpen = !_state.panelOpen;
-        if (_state.panelOpen && _state.browseFiles === null) {
-            /* primera apertura: usar knownFiles del día actual */
-            _state.browseDate = new Date();
-        }
+        if (_state.panelOpen) _state.offsetDay = 0;
         _renderExistingPanel();
     },
 
-    browseDay(offset) {
-        const base = new Date();
-        base.setDate(base.getDate() + offset);
-        _state.browseDate = base;
-        if (offset === 0) {
-            /* volver a hoy: usar los archivos ya cargados por el monitor */
-            _state.browseFiles = null;
-            _renderExistingPanel();
-        } else {
-            /* otro día: cargar desde Drive */
-            _state.browseFiles = [];
-            _renderExistingPanel();
-            _loadBrowseFiles();
-        }
+    async changeDay(delta) {
+        _state.offsetDay += delta;
+        _state.knownFiles = [];
+        _setFileCount(null);
+        const panel = document.getElementById('drive-existing-panel');
+        if (panel) panel.innerHTML = '<div style="padding:14px;text-align:center;font-size:12px;color:#5C6F63;">Cargando...</div>';
+        try {
+            const dayId = await _getDayFolderId(_state.offsetDay);
+            if (dayId) {
+                const files = await _getAllTxtRecursive(dayId);
+                _state.knownFiles = files;
+                _setFileCount(files.length);
+            } else {
+                _setFileCount(0);
+            }
+        } catch(e) { console.error('[DriveSync] changeDay:', e); }
+        _renderExistingPanel();
     },
 
     async processExisting(fileId) {
-        const allFiles = (_state.browseFiles !== null && _state.browseFiles !== 'loading')
-            ? _state.browseFiles : _state.knownFiles;
-        const file = allFiles.find(f => f.id === fileId);
+        const file = _state.knownFiles.find(f => f.id === fileId);
         if (!file) return;
         const sel    = document.getElementById('ep-picker-' + fileId);
         const picker = sel?.value || DRIVE_CONFIG.DEFAULT_PICKER;
-
-        /* Marcar el botón como procesando ANTES de await (la ref es válida aquí) */
-        const btn = document.querySelector(`button[onclick="DriveSync.processExisting('${fileId}')"]`);
+        const btn    = document.querySelector(`button[onclick="DriveSync.processExisting('${fileId}')"]`);
         if (btn) { btn.disabled = true; btn.textContent = 'Procesando...'; }
-
         try {
             const text = await _downloadText(fileId);
             const bulkCount = _countBulks(text);
-            /* _processFile llama _renderExistingPanel internamente (reconstruye DOM)
-               por eso la ref btn queda stale — no usar btn después de esta línea */
-            await _processFile({ id: file.id, name: file.name, text, bulkCount, folder: file.folder || 'Drive', picker });
-            /* El panel ya se re-renderizó con ✅ por _processFile, no hace falta más */
+            await _processFile({ name: file.name, text, bulkCount, folder: file.folder || 'Drive', picker });
+            _state.processedIds.add(fileId);
+            _saveProcessedIds();
+            _renderExistingPanel();
+            if (btn) { btn.textContent = '✓ Listo'; btn.style.background = '#e8f5e9'; btn.style.color = '#2e7d32'; }
         } catch(e) {
-            /* Botón puede estar stale si el error ocurre tarde — buscar de nuevo */
-            const btnRetry = document.querySelector(`button[onclick="DriveSync.processExisting('${fileId}')"]`);
-            if (btnRetry) { btnRetry.disabled = false; btnRetry.textContent = 'Procesar'; }
+            if (btn) { btn.disabled = false; btn.textContent = 'Procesar'; }
             _setToast('Error al procesar: ' + file.name, false);
         }
     },
 
     init() {
         const attach = () => {
-            const btn  = document.getElementById('drive-sync-btn');
-            const stop = document.getElementById('drive-sync-stop');
+            const btn = document.getElementById('drive-sync-btn');
             if (!btn) { setTimeout(attach, 100); return; }
-            btn.addEventListener('click',  () => DriveSync.connect());
-            stop.addEventListener('click', () => DriveSync.stop());
-            if (localStorage.getItem('drive_api_key')) {
-                btn.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg> Reconectar Drive`;
-            }
+
+            // Restaurar texto correcto del botón
+            _restoreConnectBtn();
             if (Notification.permission === 'default') Notification.requestPermission();
             _applyMode();
-            if (localStorage.getItem('drive_was_active') === 'true') setTimeout(() => DriveSync.connect(), 800);
+
+            // Auto-reconectar si estaba activo (solo si hay API key guardada)
+            const wasActive = localStorage.getItem('drive_was_active') === 'true';
+            const hasKey    = !!localStorage.getItem('drive_api_key');
+            if (wasActive && hasKey) {
+                setTimeout(() => DriveSync.connect(), 1000);
+            }
         };
         if (document.readyState === 'loading') {
             document.addEventListener('DOMContentLoaded', attach);
